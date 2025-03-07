@@ -1,0 +1,236 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/pipelines.minVersion: 0.12.1
+    tekton.dev/tags: rpm-build
+  name: import-to-quay
+spec:
+  description: Import built results into quay.io
+  params:
+    - description: Source Repository URL
+      name: git-url
+      type: string
+    - name: revision
+      description: Revision of the Source Repository
+      type: string
+    - name: ociStorage
+      type: string
+    - description: The name of the package we build
+      name: package-name
+      type: string
+    - name: test-suffix
+      type: string
+      description: |
+        Test-only.  If testing the pipeline, we still want to test the upload to
+        quay.io, but we don't want to mix-up with the real "production" uploads.
+      default: ""
+    - name: start-time
+      description: Store pipeline start time
+      default: ""
+      type: string
+    - name: pipelinerun-id
+      description: PipelineRun ID (namespace/name)
+      default: ""
+      type: string
+    - description: The Trusted Artifact URI pointing to the x86_64 build output
+      name: x86_64-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the aarch64 build output
+      name: aarch64-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the s390x build output
+      name: s390x-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the ppc64le build output
+      name: ppc64le-artifact
+      type: string
+    - description: RPM Build environment OCI image to run scripts in
+      name: script-environment-image
+      type: string
+  results:
+    - name: IMAGE_URL
+      description: Location of build artifact
+    - name: IMAGE_DIGEST
+      description: Build artifact digest
+    - name: NVR
+      description: name-version-release of built package
+    - name: SBOM_BLOB_URL
+      description: SPDX SBOM
+      type: string
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir/results
+        name: workdir
+  steps:
+    - name: use-trusted-artifact-x86-64
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.x86_64-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-aarch64
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.aarch64-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-s390x
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.s390x-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-ppc64le
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.ppc64le-artifact)=/var/workdir/results
+    - name: gather-rpms
+      image: $(params.script-environment-image)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        cd /var/workdir/results
+        /usr/bin/gather-rpms.py \
+            --source-url git+$(params.git-url)#$(params.revision) \
+            --start-time $(params.start-time) \
+            --end-time `date "+%s"` \
+            --pipeline-id "$(params.pipelinerun-id)"
+        echo "Gathered `ls oras-staging | wc -l` files for upload"
+
+    - name: push-to-quay-select-auth
+      image: quay.io/konflux-ci/oras:latest@sha256:3536c6ca42a9168e0c7791b130fdee9793a317b306525bb609dca23d07186e9b
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        cd /var/workdir/results
+
+        # Get NVR from any SRPM
+        NVR=$(<nvr.log)
+        IMAGE_URL="$(params.ociStorage).nvr-$NVR"
+
+        echo "Selecting auth"
+        select-oci-auth $IMAGE_URL > $HOME/auth.json
+
+        echo "Pushing to: $IMAGE_URL"
+        cd oras-staging
+        # TODO: rewrite to push/attach + xargs for bigger builds (texlive has ~580 rpms)
+        oras push \
+             --registry-config "$HOME/auth.json" \
+             --artifact-type application/vnd.rpm.build.v0 \
+             --annotation quay.expires-after=14d \
+             $IMAGE_URL \
+             `cat ../oras-push-list.txt` | tee /tmp/oras.log
+
+        grep "Digest:" /tmp/oras.log | awk '{print $2}' | tr -d '\n' > $(results.IMAGE_DIGEST.path)
+        echo -n $IMAGE_URL > $(results.IMAGE_URL.path)
+        echo -n $NVR > $(results.NVR.path)
+    - name: explode-srpm
+      image: $(params.script-environment-image)
+      workingDir: /var/workdir/results/oras-staging
+      script: |
+        #!/usr/bin/env bash
+        set +x
+        # expects to parse all srpm files in /mnt
+        # writes output to /mnt/syft-sbom.json
+        SRCDIR=$(pwd)
+        TMPDIR=./syft-extracted
+        mkdir $TMPDIR
+
+        cd $TMPDIR || exit 1
+        for rpm in $SRCDIR/*.src.rpm ; do
+          echo "Extracting srpm $rpm"
+          rpm_fn=$(basename "$rpm")
+          cp "$rpm" .
+          rpm2archive -n "$rpm_fn" | tar -x
+          rm "$rpm_fn"
+        done
+
+        echo "Decompressing found archives"
+        # TODO: improve detecting archives
+        tar -vxf ./*.tar
+        tar -vxzf ./*.tar.gz
+        tar -vxzf ./*.tgz
+        tar -vxJf ./*.tar.xz
+        tar -vxjf ./*.tar.bz2
+        #unzip ./*.zip &>/dev/null # missing in mock image
+        true
+    - name: run-syft
+      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.19.0@sha256:070ecb89de5104bb64fbf399a991a975e7d4d7e0cea0f7beb1e591b5591991c8
+      workingDir: /var/workdir/results/oras-staging
+      script: |
+        syft ./syft-extracted -o spdx-json > syft-sbom.json
+    - name: merge-syft-sbom
+      image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
+      workingDir: /var/workdir/results/oras-staging
+      script: |
+        #!/usr/bin/python3
+
+        import argparse
+        import json
+
+        """
+        Expects SBOM created from konflux buildroots and syft-generated one. It will
+        take the first one and extend it with data from syft.
+        """
+
+        def merge_sboms(buildroot_sbom, syft_sbom, output_sbom):
+            sbom_broot = json.load(open(buildroot_sbom))
+            sbom_syft = json.load(open(syft_sbom))
+
+            # https://github.com/RedHatProductSecurity/security-data-guidelines/blob/main/sbom/examples/rpm/build/from-koji.py
+            syft_pkgs = sbom_syft.get('packages', [])
+            for pkg in syft_pkgs:
+                if "externalRefs" not in pkg:
+                    continue
+
+            sbom_broot['packages'].extend(syft_pkgs)
+            sbom_broot['files'].extend(sbom_syft.get("files", []))
+            syft_rels = sbom_syft.get("relationships", [])
+
+            # Adjust top-level relationship to document, to link it into Source0
+            # of our sources.
+            for relationship in syft_rels:
+                if (
+                    relationship["spdxElementId"] == "SPDXRef-DOCUMENT"
+                    and relationship["relationshipType"] == "DESCRIBES"
+                ):
+                    relationship["spdxElementId"] = "SPDXRef-Source0"  # pick first one
+                    relationship["relationshipType"] = "CONTAINS"
+            sbom_broot['relationships'].extend(syft_rels)
+
+            json.dump(sbom_broot, open(output_sbom, 'wt'))
+
+        merge_sboms("sbom-spdx.json", "syft-sbom.json", "sbom-merged.json")
+        print("Merged sbom-spdx.json and syft-sbom.json to  sbom-merged.json")
+    - name: show-sbom
+      image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
+      workingDir: /var/workdir/results/oras-staging
+      script: |
+        #!/usr/bin/env bash
+        jq . sbom-merged.json
+    - name: upload-sbom-to-quay
+      image: registry.redhat.io/rhtas/cosign-rhel9:1.1.1@sha256:3cd261cd4fed03688c6fd3c6161ae1ec69e908bbb6593ec279415414c7422535
+      script: |
+        #!/usr/bin/env bash
+        cosign \
+         attach sbom \
+         --sbom results/oras-staging/sbom-merged.json \
+         --type spdx \
+         $(cat $(results.IMAGE_URL.path))@$(cat $(results.IMAGE_DIGEST.path))
+      workingDir: /var/workdir
+    - name: report-sbom-url
+      image: quay.io/konflux-ci/yq:latest@sha256:a87f2bfedda1dab63a2567ab067dba2b6f300af1920db3eec462be18deb4148a
+      workingDir: /var/workdir/results/oras-staging
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        IMAGE_URL=$(cat $(results.IMAGE_URL.path))
+        REPO=${IMAGE_URL%:*}
+        echo "Found that ${REPO} is the repository for ${IMAGE_URL}"
+        SBOM_DIGEST=$(sha256sum sbom-spdx.json | awk '{ print $1 }')
+        echo "Found that ${SBOM_DIGEST} is the SBOM digest"
+        echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
+  volumes:
+    - name: workdir
+      emptyDir: {}

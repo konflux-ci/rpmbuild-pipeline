@@ -1,0 +1,162 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/pipelines.minVersion: 0.12.1
+    tekton.dev/tags: rpm-build
+  name: rpmbuild
+  labels:
+    build.appstudio.redhat.com/multi-platform-required: "true"
+    build.appstudio.redhat.com/build_type: "rpm"
+spec:
+  description: |-
+    RPM Build task.
+  params:
+    - description: Package name being built
+      name: package-name
+      type: string
+    - description: The platform/architecture we build for
+      name: PLATFORM
+      type: string
+    - description: The branch name we build against/from
+      name: target-branch
+      type: string
+    - description: Koji target to use
+      name: koji-target
+      type: string
+      default: DEFAULT
+    - description: RPM Build environment OCI image to run scripts in
+      name: script-environment-image
+      type: string
+    - description: Build without network access
+      name: hermetic
+      type: string
+    - description: The Trusted Artifact URI pointing to the artifact with the source and deps.
+      name: dependencies-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the artifact with the deps calculation.
+      name: calculation-artifact
+      type: string
+    - name: ociStorage
+      description: The OCI repository where the Trusted Artifacts are stored.
+      type: string
+    - name: ociArtifactExpiresAfter
+      description: How long Trusted Artifacts should be retained
+      type: string
+  results:
+    - name: rpmbuild-artifact
+      description: The Trusted Artifact URI pointing to the artifact with the result of the build.
+      type: string
+  # 'timeout: "72h"' doesn't work for task files.  Per-step timeouts work, but
+  # we have to configure per-Task timeout in the Pipeline
+  # file.
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+  steps:
+    - name: use-trusted-artifact-source
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.dependencies-artifact)=/var/workdir/source
+    - name: use-trusted-artifact-results
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.calculation-artifact)=/var/workdir/results
+    - name: mock-build
+      image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
+      script: |
+        #!/bin/bash
+        set -ex
+        mkdir -p ~/.ssh
+        if [ -e "/ssh/error" ]; then
+          #no server could be provisioned
+          cat /ssh/error
+          exit 1
+        elif [ -e "/ssh/otp" ]; then
+         curl --cacert /ssh/otp-ca -XPOST -d @/ssh/otp $(cat /ssh/otp-server) >~/.ssh/id_rsa
+         echo "" >> ~/.ssh/id_rsa
+        else
+          cp /ssh/id_rsa ~/.ssh
+        fi
+
+        arch=x86_64
+        case $(params.PLATFORM) in
+          *s390x) arch=s390x ;;
+          *ppc64le) arch=ppc64le ;;
+          *arm64) arch=aarch64 ;;
+        esac
+
+        chmod 0400 ~/.ssh/id_rsa
+        export SSH_HOST=$(cat /ssh/host)
+        export HOMEDIR=$(cat /ssh/user-dir)
+        export SSH_ARGS="-o StrictHostKeyChecking=no"
+        remote_cmd() { ssh $SSH_ARGS "$SSH_HOST" "$@" ; }
+        send() { rsync -rva "$1" "$SSH_HOST:$2" ; }
+        receive() { rsync -rva "$SSH_HOST:$1" "$2" ; }
+
+        if [ "$SSH_HOST" == "localhost" ] ; then
+          echo "Running at local host is not supported"
+          return -1
+        fi
+
+        workdir=/var/workdir
+
+        remote_cmd echo "Hello from the other side!"
+        send "$workdir/source/" "$HOMEDIR/source"
+
+        remote_cmd mkdir "$HOMEDIR/results"
+
+        mock_img=$(params.script-environment-image)
+        remote_cmd podman pull "$mock_img"
+
+        if [ "$(params.hermetic)" == "true" ] ; then
+          send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
+          remote_cmd podman run --network=none \
+                                -v "$HOMEDIR/source:/source" \
+                                -v "$HOMEDIR/results:/results" \
+                                -v "$HOMEDIR/buildroot:/buildroot" \
+                                --privileged --rm -ti "$mock_img" \
+              mock --hermetic-build \
+                  /buildroot/results/buildroot_lock.json \
+                  /buildroot/results/buildroot_repo \
+                  --spec /source/$(params.package-name).spec \
+                  --sources /source --resultdir /results
+        else
+          remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
+                                -v "$HOMEDIR/source:/source" \
+                                -v "$HOMEDIR/results:/results" \
+                                --privileged --rm -ti "$mock_img" \
+                                -e KOJI_TARGET="$(params.koji-target)" \
+              mock -r fedora-rawhide-"$arch" \
+                  --spec /source/$(params.package-name).spec \
+                  --sources /source --resultdir /results
+        fi
+
+        resultdir="$workdir/results/$arch"
+        mkdir -p "$resultdir"
+        receive "$HOMEDIR/results/" "$resultdir"
+      volumeMounts:
+        - mountPath: /ssh
+          name: ssh
+          readOnly: true
+    - name: create-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - create
+        - --store
+        - $(params.ociStorage)
+        - $(results.rpmbuild-artifact.path)=/var/workdir/results
+      env:
+        - name: IMAGE_EXPIRES_AFTER
+          value: $(params.ociArtifactExpiresAfter)
+  volumes:
+    - name: ssh
+      secret:
+        optional: false
+        secretName: multi-platform-ssh-$(context.taskRun.name)
+    - name: workdir
+      emptyDir: {}

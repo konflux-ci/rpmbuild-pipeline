@@ -1,0 +1,82 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/tags: rpm-build
+  name: check-noarch
+spec:
+  description: |-
+    Compare all noarch rpms
+  params:
+    - description: The Trusted Artifact URI pointing to the x86_64 build output
+      name: x86_64-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the aarch64 build output
+      name: aarch64-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the s390x build output
+      name: s390x-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the ppc64le build output
+      name: ppc64le-artifact
+      type: string
+    - description: RPM Build environment OCI image to run scripts in
+      name: script-environment-image
+      type: string
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+  steps:
+    - name: use-trusted-artifact-x86-64
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.x86_64-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-aarch64
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.aarch64-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-s390x
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.s390x-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-ppc64le
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.ppc64le-artifact)=/var/workdir/results
+    - name: check-noarch
+      image: $(params.script-environment-image)
+      script: |
+        #!/usr/bin/python3
+        import os
+        import sys
+
+        from koji.rpmdiff import Rpmdiff
+
+        noarch_files = {}
+
+        errors = 0
+        for root, _, files in os.walk('/var/workdir/results'):
+            for fname in files:
+                if fname.endswith('.noarch.rpm'):
+                    fpath = os.path.join(root, fname)
+                    hash = Rpmdiff(fpath, fpath, ignore='S5TN').kojihash()
+                    if fname in noarch_files:
+                        if hash != noarch_files[fname]:
+                            error += 1
+                            print(f'{fname} mismatch')
+                    else:
+                        noarch_files[fname] = hash
+        if errors:
+            print(f"{errors} errors found")
+            sys.exit(1)
+        else:
+            print(f"All noarch rpms matches each other.")
+  volumes:
+    - name: workdir
+      emptyDir: {}

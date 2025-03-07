@@ -1,0 +1,50 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/konflux-ci/rpmbuild-pipeline?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: pipelines
+    appstudio.openshift.io/component: ci-for-pipeline
+    pipelines.appstudio.openshift.io/type: build
+  name: ci-for-pipeline-on-pull-request
+  namespace: rpm-build-pipeline-tenant
+spec:
+  params:
+    - name: package-name
+      value: libecpg
+    - name: git-url
+      value: "https://src.fedoraproject.org/rpms/libecpg.git"
+    - name: revision
+      value: "main"
+    - name: target-branch
+      value: "main"
+    - name: self-ref-revision
+      value: "{{ revision }}"
+    - name: self-ref-url
+      value: "{{ source_url }}"
+    - name: test-suffix
+      value: -rpmbuild-pipeline
+    - name: ociStorage
+      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-{{ revision }}
+  pipelineRef:
+    resolver: git
+    params:
+      - name: url
+        value: "{{ source_url }}"
+      - name: revision
+        value: "{{ revision }}"
+      - name: pathInRepo
+        value: pipeline/build-rpm-package.yaml
+  workspaces:
+    - name: git-auth
+      secret:
+        secretName: '{{ git_auth_secret }}'
