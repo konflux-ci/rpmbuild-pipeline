@@ -11,5 +11,6 @@
       "pipeline/**",
       "task/**"
     ]
-  }
+  },
+  "prConcurrentLimit": 1
 }
