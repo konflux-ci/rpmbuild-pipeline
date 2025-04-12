@@ -340,7 +340,7 @@ spec:
         - name: dependencies-artifact
           value: $(tasks.get-rpm-sources.results.dependencies-artifact)
         - name: calculation-artifact
-          value: foobar
+          value: $(tasks.calculate-deps-aarch64.results.calculation-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-aarch64
         - name: ociArtifactExpiresAfter

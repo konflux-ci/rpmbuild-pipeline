@@ -38,6 +38,7 @@ spec:
     - description: The Trusted Artifact URI pointing to the artifact with the deps calculation.
       name: calculation-artifact
       type: string
+      default: "false"
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
       type: string
