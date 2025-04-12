@@ -56,6 +56,12 @@ spec:
       - mountPath: /var/workdir
         name: workdir
   steps:
+    - name: print
+      image: fedora:41
+      script: |
+        #!/bin/bash -x
+        echo params.dependencies-artifact
+        echo $(params.dependencies-artifact)
     - name: use-trusted-artifact-source
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:
