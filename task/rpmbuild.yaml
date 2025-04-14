@@ -67,7 +67,7 @@ spec:
         - use
         - $(params.calculation-artifact)=/var/workdir/results
     - name: mock-build
-      image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
+      image: quay.io/redhat-appstudio/multi-platform-runner:1c073a7b6299d467a0a651d02ca6bbe9d5252f1c
       script: |
         #!/bin/bash
         set -ex
