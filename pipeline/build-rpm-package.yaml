@@ -354,6 +354,11 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/rpmbuild.yaml
+      when:
+        - input: "true"
+          operator: in
+          values:
+            - "true"
     - name: calculate-deps-s390x
       runAfter:
         - get-rpm-sources

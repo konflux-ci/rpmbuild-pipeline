@@ -35,6 +35,8 @@ spec:
       value: -rpmbuild-pipeline
     - name: ociStorage
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-{{ revision }}
+    - name: hermetic
+      value: false
   pipelineRef:
     resolver: git
     params:
