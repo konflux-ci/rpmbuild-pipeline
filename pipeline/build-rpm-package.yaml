@@ -132,6 +132,7 @@ spec:
       value: $(tasks.upload-to-quay.results.SBOM_BLOB_URL)
   tasks:
     - name: store-start-time
+      retries: 3
       taskSpec:
         results:
           - name: timestamp
@@ -144,6 +145,7 @@ spec:
               set -e
               date "+%s" | tr -d '\n' | tee $(results.timestamp.path)
     - name: init
+      retries: 3
       params:
         - name: rebuild
           value: $(params.rebuild)
@@ -163,6 +165,7 @@ spec:
             value: task
         resolver: bundles
     - name: clone-repository
+      retries: 3
       params:
         - name: url
           value: $(params.git-url)
@@ -194,6 +197,7 @@ spec:
         - name: basic-auth
           workspace: git-auth
     - name: get-rpm-sources
+      retries: 3
       taskRef:
         resolver: git
         params:
