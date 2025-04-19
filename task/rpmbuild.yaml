@@ -71,6 +71,10 @@ spec:
       script: |
         #!/bin/bash
         set -ex
+        if test "$(params.PLATFORM)" = localhost; then
+          # do nothing (architecture not selected)
+          exit 0
+        fi
         mkdir -p ~/.ssh
         if [ -e "/ssh/error" ]; then
           #no server could be provisioned
@@ -113,13 +117,17 @@ spec:
         mock_img=$(params.script-environment-image)
         remote_cmd podman pull "$mock_img"
 
-        if [ "$(params.hermetic)" == "true" ] ; then
+        podman_params=(
+            -v "$HOMEDIR/source:/source"
+            -v "$HOMEDIR/results:/results"
+            --privileged --rm -ti "$mock_img"
+        )
+
+        if "$(params.hermetic)"; then
           send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
           remote_cmd podman run --network=none \
-                                -v "$HOMEDIR/source:/source" \
-                                -v "$HOMEDIR/results:/results" \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
-                                --privileged --rm -ti "$mock_img" \
+                                "${podman_params[@]}" \
               mock --hermetic-build \
                   /buildroot/results/buildroot_lock.json \
                   /buildroot/results/buildroot_repo \
@@ -127,10 +135,7 @@ spec:
                   --sources /source --resultdir /results
         else
           remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
-                                -v "$HOMEDIR/source:/source" \
-                                -v "$HOMEDIR/results:/results" \
-                                --privileged --rm -ti "$mock_img" \
-                                -e KOJI_TARGET="$(params.koji-target)" \
+                                "${podman_params[@]}" \
               mock -r fedora-rawhide-"$arch" \
                   --spec /source/$(params.package-name).spec \
                   --sources /source --resultdir /results

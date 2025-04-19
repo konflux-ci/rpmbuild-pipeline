@@ -53,6 +53,10 @@ spec:
       script: |
         #!/bin/bash
         set -ex
+        if test "$(params.PLATFORM)" = localhost; then
+          # do nothing (architecture not selected)
+          exit 0
+        fi
         mkdir -p ~/.ssh
         if [ -e "/ssh/error" ]; then
           #no server could be provisioned

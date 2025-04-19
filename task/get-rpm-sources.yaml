@@ -24,10 +24,54 @@ spec:
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
+    - description: Is the build hermetic?
+      name: hermetic
+      type: string
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
       type: string
+    - name: skip-mpc-tasks
+      description: |
+        The RPM Build Pipeline tasks depend on each other (subsequent tasks
+        consume results from previous tasks).  These dependencies are
+        declaratively specified, and if a task is skipped and doesn't provide
+        results, the subsequent task is skipped as well.  But we need the
+        Pipeline to continue.  For this reason, we don't skip tasks — instead,
+        we perform a no-op ("do nothing") inside the task, if needed.
+
+        Here's where another complication arises; the Multi-Platform Controller
+        in Konflux allocates architecture-specific VMs for us, even if a task is
+        effectively doing nothing.  To work around this, we use the concept of
+        PLATFORM=localhost, which prevents this VM allocation.  This Tekton step
+        is used to programmatically determine which MPC-dependent tasks should
+        be "skipped".
+
+        Related issues
+        - https://github.com/tektoncd/pipeline/issues/3749
+        - https://github.com/tektoncd/pipeline/issues/1684
+        - https://github.com/tektoncd/pipeline/issues/1023
+      properties:
+        deps-ppc64le:
+          type: string
+        deps-x86_64:
+          type: string
+        deps-s390x:
+          type: string
+        deps-aarch64:
+          type: string
+        deps-i686:
+          type: string
+        build-ppc64le:
+          type: string
+        build-x86_64:
+          type: string
+        build-s390x:
+          type: string
+        build-aarch64:
+          type: string
+        build-i686:
+          type: string
   stepTemplate:
     volumeMounts:
       - mountPath: /var/workdir
@@ -44,6 +88,34 @@ spec:
         set -x
         cd "/var/workdir/source"
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+    - name: select-mpc-machines-or-skip
+      image: $(params.script-environment-image)
+      script: |
+        #! /usr/bin/python3
+        import json
+        architecture_decision = {
+          "deps-x86_64": "linux/amd64",
+          "deps-i686": "linux/amd64",
+          "deps-aarch64": "linux/arm64",
+          "deps-s390x": "linux/s390x",
+          "deps-ppc64le": "linux/ppc64le",
+          "build-x86_64": "linux/amd64",
+          "build-i686": "linux/amd64",
+          "build-aarch64": "linux/arm64",
+          "build-s390x": "linux/s390x",
+          "build-ppc64le": "linux/ppc64le",
+        }
+        # Set the value to 'localhost' if you want to skip the corresponding
+        # task (the tasks are modified so they do nothing on localhost).
+        if "$(params.hermetic)" != "true":
+          for key in architecture_decision.keys():
+            if key.startswith("deps-"):
+              architecture_decision[key] = "localhost"
+        results_file = "$(results.skip-mpc-tasks.path)"
+        print("Writing into ", results_file)
+        with open(results_file, "w") as fd:
+          json.dump(architecture_decision, fd)
+        print(json.dumps(architecture_decision))
     - name: create-trusted-artifact
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:

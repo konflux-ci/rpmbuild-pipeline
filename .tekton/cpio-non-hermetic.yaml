@@ -15,14 +15,14 @@ metadata:
     appstudio.openshift.io/application: pipelines
     appstudio.openshift.io/component: ci-for-pipeline
     pipelines.appstudio.openshift.io/type: build
-  name: ci-for-pipeline-on-pull-request-hermetic
+  name: ci-for-pipeline-on-pull-request
   namespace: rpm-build-pipeline-tenant
 spec:
   params:
     - name: package-name
-      value: libecpg
+      value: cpio
     - name: git-url
-      value: "https://src.fedoraproject.org/rpms/libecpg.git"
+      value: "https://src.fedoraproject.org/rpms/cpio.git"
     - name: revision
       value: "main"
     - name: target-branch
@@ -34,7 +34,9 @@ spec:
     - name: test-suffix
       value: -rpmbuild-pipeline
     - name: ociStorage
-      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-libecpg-{{ revision }}
+      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
+    - name: hermetic
+      value: false
   pipelineRef:
     resolver: git
     params:

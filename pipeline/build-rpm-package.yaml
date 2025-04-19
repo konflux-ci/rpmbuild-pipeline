@@ -85,7 +85,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:920dba51abf5c2a68a4d2b214f8d2b169a3bf4e6
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:97b772c12a5fa37f5d5f1c8100dd2bb38e2bf175
       type: string
     - name: ociStorage
       description: |
@@ -188,11 +188,6 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-      when:
-        - input: $(tasks.init.results.build)
-          operator: in
-          values:
-            - "true"
       workspaces:
         - name: basic-auth
           workspace: git-auth
@@ -222,14 +217,11 @@ spec:
           value: 14d
         - name: script-environment-image
           value: $(params.script-environment-image)
+        - name: hermetic
+          value: $(params.hermetic)
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources
-      when:
-        - input: $(params.hermetic)
-          operator: in
-          values:
-            - "true"
       params:
         - name: package-name
           value: $(params.package-name)
@@ -238,7 +230,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/amd64
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
@@ -268,7 +260,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/amd64
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
@@ -293,11 +285,6 @@ spec:
     - name: calculate-deps-aarch64
       runAfter:
         - get-rpm-sources
-      when:
-        - input: $(params.hermetic)
-          operator: in
-          values:
-            - "true"
       params:
         - name: package-name
           value: $(params.package-name)
@@ -306,7 +293,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/arm64
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
@@ -336,7 +323,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/arm64
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
@@ -361,11 +348,6 @@ spec:
     - name: calculate-deps-s390x
       runAfter:
         - get-rpm-sources
-      when:
-        - input: $(params.hermetic)
-          operator: in
-          values:
-            - "true"
       params:
         - name: package-name
           value: $(params.package-name)
@@ -374,7 +356,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/s390x
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
@@ -404,7 +386,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/s390x
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
@@ -429,11 +411,6 @@ spec:
     - name: calculate-deps-ppc64le
       runAfter:
         - get-rpm-sources
-      when:
-        - input: $(params.hermetic)
-          operator: in
-          values:
-            - "true"
       params:
         - name: package-name
           value: $(params.package-name)
@@ -442,7 +419,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/ppc64le
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
@@ -472,7 +449,7 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: linux/ppc64le
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
