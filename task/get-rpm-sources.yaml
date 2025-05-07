@@ -27,6 +27,9 @@ spec:
     - description: Is the build hermetic?
       name: hermetic
       type: string
+    - description: List of architectures we build RPMs for
+      name: build-architectures
+      type: array
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
@@ -90,9 +93,15 @@ spec:
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
     - name: select-mpc-machines-or-skip
       image: $(params.script-environment-image)
+      args:
+        - "$(params.build-architectures[*])"
       script: |
         #! /usr/bin/python3
+        import sys
         import json
+        selected_architectures = sys.argv[1:]
+        print(f"Trying to build for {selected_architectures}")
+
         architecture_decision = {
           "deps-x86_64": "linux/amd64",
           "deps-i686": "linux/amd64",
@@ -110,7 +119,21 @@ spec:
         if "$(params.hermetic)" != "true":
           for key in architecture_decision.keys():
             if key.startswith("deps-"):
+              print(f"non-hermetic build, disabling {key} task")
               architecture_decision[key] = "localhost"
+
+        # skip disabled architectures
+        for key in architecture_decision.keys():
+          found = False
+          for arch_ok in selected_architectures:
+            if key.endswith("-" + arch_ok):
+              found = True
+              break
+          if found:
+            continue
+          print(f"disabling {key} because it is not a selected architecture")
+          architecture_decision[key] = "localhost"
+
         results_file = "$(results.skip-mpc-tasks.path)"
         print("Writing into ", results_file)
         with open(results_file, "w") as fd:

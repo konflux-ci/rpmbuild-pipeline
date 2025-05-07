@@ -37,6 +37,9 @@ spec:
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
     - name: hermetic
       value: false
+    - name: build-architectures
+      value:
+        - aarch64
   pipelineRef:
     resolver: git
     params:
