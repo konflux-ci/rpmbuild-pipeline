@@ -98,6 +98,8 @@ spec:
 
         mock_img=$(params.script-environment-image)
         remote_cmd podman pull "$mock_img"
+
+        success=true
         remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
                               -v "$HOMEDIR/source:/source" \
                               -v "$HOMEDIR/results:/results" \
@@ -105,7 +107,14 @@ spec:
             mock -r fedora-rawhide-"$arch" \
                 --spec /source/$(params.package-name).spec \
                 --sources /source --resultdir /results \
-                --calculate-build-dependencies
+                --calculate-build-dependencies \
+        || success=false
+
+        # display dnf logs (no matter the mock exit status), and propagate the
+        # mock failure (terminates the whole script)
+        remote_cmd tar xfO $HOMEDIR/results/chroot_scan.tar.gz
+        $success
+
         remote_cmd podman run -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \
             mock-hermetic-repo \

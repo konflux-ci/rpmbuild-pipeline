@@ -123,6 +123,7 @@ spec:
             --privileged --rm -ti "$mock_img"
         )
 
+        success=true
         if "$(params.hermetic)"; then
           send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
           remote_cmd podman run --network=none \
@@ -132,14 +133,21 @@ spec:
                   /buildroot/results/buildroot_lock.json \
                   /buildroot/results/buildroot_repo \
                   --spec /source/$(params.package-name).spec \
-                  --sources /source --resultdir /results
+                  --sources /source --resultdir /results \
+          || success=false
         else
           remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
                                 "${podman_params[@]}" \
               mock -r fedora-rawhide-"$arch" \
                   --spec /source/$(params.package-name).spec \
-                  --sources /source --resultdir /results
+                  --sources /source --resultdir /results \
+          || success=false
         fi
+
+        # display dnf logs (no matter the mock exit status), and propagate the
+        # mock failure (terminates the whole script)
+        remote_cmd tar xfO $HOMEDIR/results/chroot_scan.tar.gz
+        $success
 
         resultdir="$workdir/results/$arch"
         mkdir -p "$resultdir"
