@@ -9,6 +9,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | git-url       | Source Repository URL. Typically set to `{{ source_url }}`. | |
 | revision      | Revision of the Source Repository. Typically use `{{ revision }}`. | |
 | target-branch | What is the package branch we work with, e.g., `rhel-10-main`, `{{ target_branch }}` | |
+| build-architectures | Array of architectures we want to build for | `[aarch64, s390x, ppc64le, x86_64]` |
 | hermetic      | Perform the RPM build in a hermetic (offline) environment. | true |
 | mock-image    | Mock Container image used to perform RPM builds in the pipeline. | Check the [main branch][mock-image] |
 

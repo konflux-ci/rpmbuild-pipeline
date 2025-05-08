@@ -52,6 +52,13 @@ spec:
     - description: The branch name we build against/from
       name: target-branch
       type: string
+    - name: build-architectures
+      type: array
+      default:
+        - aarch64
+        - ppc64le
+        - s390x
+        - x86_64
     - description: Koji target to use
       name: koji-target
       type: string
@@ -219,6 +226,8 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
+        - name: build-architectures
+          value: ["$(params.build-architectures[*])"]
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources

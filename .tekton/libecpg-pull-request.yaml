@@ -35,6 +35,9 @@ spec:
       value: -rpmbuild-pipeline
     - name: ociStorage
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-libecpg-{{ revision }}
+    - name: build-architectures
+      value:
+        - x86_64
   pipelineRef:
     resolver: git
     params:
