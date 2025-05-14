@@ -1,5 +1,48 @@
 ---
 apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: build-testing-rpm-packages
+  labels:
+    build.appstudio.redhat.com/pipeline: "build-testing-rpm-packages"
+    pipelines.appstudio.openshift.io/type: build
+spec:
+  tasks:
+    - name: package-build-no-1
+      params:
+        - name: package-name
+          value: cpio
+        - name: git-url
+          value: "https://src.fedoraproject.org/rpms/cpio.git"
+        - name: revision
+          value: "main"
+        - name: target-branch
+          value: "main"
+        - name: self-ref-revision
+          value: "{{ revision }}"
+        - name: self-ref-url
+          value: "{{ source_url }}"
+        - name: test-suffix
+          value: -rpmbuild-pipeline
+        - name: ociStorage
+          value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
+        - name: hermetic
+          value: false
+        - name: build-architectures
+          value:
+            - aarch64
+      pipelineRef:
+        resolver: git
+        params:
+          - name: url
+            value: "{{ source_url }}"
+          - name: revision
+            value: "{{ revision }}"
+          - name: pathInRepo
+            value: pipeline/build-rpm-package.yaml
+
+---
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -18,37 +61,8 @@ metadata:
   name: ci-for-pipeline-on-pull-request
   namespace: rpm-build-pipeline-tenant
 spec:
-  params:
-    - name: package-name
-      value: cpio
-    - name: git-url
-      value: "https://src.fedoraproject.org/rpms/cpio.git"
-    - name: revision
-      value: "main"
-    - name: target-branch
-      value: "main"
-    - name: self-ref-revision
-      value: "{{ revision }}"
-    - name: self-ref-url
-      value: "{{ source_url }}"
-    - name: test-suffix
-      value: -rpmbuild-pipeline
-    - name: ociStorage
-      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
-    - name: hermetic
-      value: false
-    - name: build-architectures
-      value:
-        - aarch64
   pipelineRef:
-    resolver: git
-    params:
-      - name: url
-        value: "{{ source_url }}"
-      - name: revision
-        value: "{{ revision }}"
-      - name: pathInRepo
-        value: pipeline/build-rpm-package.yaml
+    name: build-testing-rpm-packages
   workspaces:
     - name: git-auth
       secret:
