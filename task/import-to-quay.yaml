@@ -109,7 +109,7 @@ spec:
         NVR=$(<nvr.log)
         IMAGE_URL="$(params.ociStorage).nvr-$NVR"
 
-        echo "Selecting auth"
+        echo "Selecting auth for $IMAGE_URL"
         select-oci-auth $IMAGE_URL > $HOME/auth.json
 
         echo "Pushing to: $IMAGE_URL"

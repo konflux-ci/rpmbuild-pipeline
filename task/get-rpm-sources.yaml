@@ -192,7 +192,6 @@ spec:
                 build_arches = list(set(build_arches) - set(arches['excludearch']))
             selected_architectures = [random.choice(build_arches)]
 
-
         # skip disabled architectures
         for key in architecture_decision.keys():
             found = False
@@ -204,7 +203,6 @@ spec:
                 continue
             print(f"disabling {key} because it is not a selected architecture")
             architecture_decision[key] = "localhost"
-
 
         results_file = "$(results.skip-mpc-tasks.path)"
         print("Writing into ", results_file)
