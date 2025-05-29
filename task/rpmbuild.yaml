@@ -115,7 +115,14 @@ spec:
         remote_cmd mkdir "$HOMEDIR/results"
 
         mock_img=$(params.script-environment-image)
-        remote_cmd podman pull "$mock_img"
+        # podman pull has --retry=3 as a default, nevertheless it works only for download of blobs,
+        # if manifest download fails it will not be applied
+        for i in {1..5} ; do
+            remote_cmd podman pull "$mock_img" && break
+            sleep_time=$((i ** 2))
+            echo "Retrying in $sleep_time seconds."
+            sleep $sleep_time
+        done
 
         podman_params=(
             -v "$HOMEDIR/source:/source"
