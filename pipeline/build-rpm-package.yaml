@@ -92,13 +92,19 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:44db26f1861de8486478c1eb78bf2c40f429b747
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:eb178e6f7b63152c384dc3e112dd2068000d56aa
       type: string
     - name: ociStorage
       description: |
         Quay.io namespace where the pipeline stores trusted artifacts, including
         both resulting artifacts and intermediary by-products.
       default: quay.io/redhat-user-workloads/$(context.taskRun.namespace)/$(params.package-name)
+    - name: pulp-domain
+      description: The domain to use with pulp. Defaults to namespace but will remove the -tenant.
+      default: $(context.taskRun.namespace)
+    - name: pulp-repository-name
+      description: The repository name that pulp will use.
+      default: $(params.package-name)
 
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
@@ -504,6 +510,10 @@ spec:
           value: $(tasks.rpmbuild-ppc64le.results.rpmbuild-artifact)
         - name: script-environment-image
           value: $(params.script-environment-image)
+        - name: pulp-domain
+          value: $(params.pulp-domain)
+        - name: pulp-repository-name
+          value: $(params.pulp-repository-name)
       runAfter:
         - rpmbuild-s390x
         - rpmbuild-x86-64
