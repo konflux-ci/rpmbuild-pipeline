@@ -99,6 +99,9 @@ spec:
         Quay.io namespace where the pipeline stores trusted artifacts, including
         both resulting artifacts and intermediary by-products.
       default: quay.io/redhat-user-workloads/$(context.taskRun.namespace)/$(params.package-name)
+    - name: pulp-repository-name
+      description: The repository name that pulp will use.
+      default: $(params.package-name)
 
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
@@ -504,6 +507,8 @@ spec:
           value: $(tasks.rpmbuild-ppc64le.results.rpmbuild-artifact)
         - name: script-environment-image
           value: $(params.script-environment-image)
+        - name: pulp-repository-name
+          value: $(params.pulp-repository-name)
       runAfter:
         - rpmbuild-s390x
         - rpmbuild-x86-64
