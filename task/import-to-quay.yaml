@@ -59,6 +59,10 @@ spec:
     - name: SBOM_BLOB_URL
       description: SPDX SBOM
       type: string
+    - name: PULP-IMAGE_URL
+      description: Location of Pulp build artifact
+    - name: PULP-IMAGE_DIGEST
+      description: Pulp build artifact digest
   stepTemplate:
     volumeMounts:
       - mountPath: /var/workdir/results
@@ -174,6 +178,34 @@ spec:
       script: |
         #!/usr/bin/env bash
         jq . sbom-merged.json
+    - name: push-to-pulp-select-auth
+      image: $(params.script-environment-image)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        if [ -f /pulp-access/oauth-cli.toml ]; then
+          cd /pulp-access
+          /usr/bin/pulp-upload.py \
+            --config oauth-cli.toml \
+            --repository_name "$(params.package-name)" \
+            --rpm_path "/var/workdir/results" \
+            --sbom_path "/var/workdir/results/oras-staging/sbom-merged.json" \
+            --build_id "$(params.pipelinerun-id)" \
+            --namespace "$(context.taskRun.namespace)" \
+            --parent_package "$(params.package-name)" \
+            --output_json ~/pulp_results.json \
+            --artifact_results "$(results.PULP-IMAGE_URL.path)","$(results.PULP-IMAGE_DIGEST.path)"
+
+        else
+          echo "Pulp config file does not exist; skipping push and writing empty Pulp result files"
+          : > "$(results.PULP-IMAGE_URL.path)"
+          : > "$(results.PULP-IMAGE_DIGEST.path)"
+        fi
+      volumeMounts:
+        - mountPath: /pulp-access
+          readOnly: true
+          name: pulp-access-credentials
     - name: upload-sbom-to-quay
       image: registry.redhat.io/rhtas/cosign-rhel9:1.1.1@sha256:3cd261cd4fed03688c6fd3c6161ae1ec69e908bbb6593ec279415414c7422535
       script: |
@@ -197,5 +229,9 @@ spec:
         echo "Found that ${SBOM_DIGEST} is the SBOM digest"
         echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
   volumes:
+    - name: pulp-access-credentials
+      secret:
+        optional: true
+        secretName: pulp-access
     - name: workdir
       emptyDir: {}

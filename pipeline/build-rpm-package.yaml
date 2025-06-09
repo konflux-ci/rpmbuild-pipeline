@@ -92,7 +92,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:4b95644a1a230956d9cc8121cc3b15dbd5bdd5d0
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:0fd8137f86d8569b435e3770cff29d9a86ebe12f
       type: string
     - name: ociStorage
       description: |
@@ -137,6 +137,12 @@ spec:
     - name: SBOM_BLOB_URL
       description: SPDX SBOM
       value: $(tasks.upload-to-quay.results.SBOM_BLOB_URL)
+    - description: ""
+      name: PULP-IMAGE_URL
+      value: $(tasks.upload-to-quay.results.PULP-IMAGE_URL)
+    - description: ""
+      name: PULP-IMAGE_DIGEST
+      value: $(tasks.upload-to-quay.results.PULP-IMAGE_DIGEST)
   tasks:
     - name: store-start-time
       retries: 3

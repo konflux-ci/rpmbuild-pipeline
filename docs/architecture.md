@@ -84,6 +84,11 @@ using [MPC][].
     - Collects all built artifacts from previous steps and uploads them to
       OCI registry (the destination is selected by the user as a pipeline
       parameter).
+    - If config for [pulp cli][] is setup as a secret using pulp-config secret name,
+      Pulp will upload RPMs, logs, and SBOM to a configured pulp domain.
+      In the secert will need to be a file called oauth-cli.toml. This will need to contain
+      the pulp config toml. It accepts either certs or oauth. If using certs to do
+      authentication, the certs will need to be included in the secret.
 - **check-noarch**
     - Verifies that all noarch (sub-)packages from the architecture-specific
       builds are identical.  If they are not, the step fails the pipeline.
@@ -97,3 +102,4 @@ using [MPC][].
 [Why Mock]: https://rpm-software-management.github.io/mock/Why-Mock
 [Mock]: https://rpm-software-management.github.io/mock/
 [DistGit]: https://github.com/release-engineering/dist-git
+[pulp cli] https://pulpproject.org/pulp-cli/docs/user/guides/configuration/
