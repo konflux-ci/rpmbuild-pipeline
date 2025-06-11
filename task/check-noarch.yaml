@@ -68,7 +68,7 @@ spec:
                     hash = Rpmdiff(fpath, fpath, ignore='S5TN').kojihash()
                     if fname in noarch_files:
                         if hash != noarch_files[fname]:
-                            error += 1
+                            errors += 1
                             print(f'{fname} mismatch')
                     else:
                         noarch_files[fname] = hash
@@ -76,7 +76,7 @@ spec:
             print(f"{errors} errors found")
             sys.exit(1)
         else:
-            print(f"All noarch rpms matches each other.")
+            print("All noarch rpms matches each other.")
   volumes:
     - name: workdir
       emptyDir: {}
