@@ -161,48 +161,13 @@ spec:
       script: |
         syft ./syft-extracted -o spdx-json > syft-sbom.json
     - name: merge-syft-sbom
-      image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
+      image: $(params.script-environment-image)
       workingDir: /var/workdir/results/oras-staging
       script: |
-        #!/usr/bin/python3
-
-        import argparse
-        import json
-
-        """
-        Expects SBOM created from konflux buildroots and syft-generated one. It will
-        take the first one and extend it with data from syft.
-        """
-
-        def merge_sboms(buildroot_sbom, syft_sbom, output_sbom):
-            sbom_broot = json.load(open(buildroot_sbom))
-            sbom_syft = json.load(open(syft_sbom))
-
-            # https://github.com/RedHatProductSecurity/security-data-guidelines/blob/main/sbom/examples/rpm/build/from-koji.py
-            syft_pkgs = sbom_syft.get('packages', [])
-            for pkg in syft_pkgs:
-                if "externalRefs" not in pkg:
-                    continue
-
-            sbom_broot['packages'].extend(syft_pkgs)
-            sbom_broot['files'].extend(sbom_syft.get("files", []))
-            syft_rels = sbom_syft.get("relationships", [])
-
-            # Adjust top-level relationship to document, to link it into Source0
-            # of our sources.
-            for relationship in syft_rels:
-                if (
-                    relationship["spdxElementId"] == "SPDXRef-DOCUMENT"
-                    and relationship["relationshipType"] == "DESCRIBES"
-                ):
-                    relationship["spdxElementId"] = "SPDXRef-Source0"  # pick first one
-                    relationship["relationshipType"] = "CONTAINS"
-            sbom_broot['relationships'].extend(syft_rels)
-
-            json.dump(sbom_broot, open(output_sbom, 'wt'))
-
-        merge_sboms("sbom-spdx.json", "syft-sbom.json", "sbom-merged.json")
-        print("Merged sbom-spdx.json and syft-sbom.json to  sbom-merged.json")
+        #!/bin/bash
+        set -x
+        
+        python3 /usr/local/bin/merge_syft_sbom.py --sbom-spdx sbom-spdx.json --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json
     - name: show-sbom
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
       workingDir: /var/workdir/results/oras-staging
