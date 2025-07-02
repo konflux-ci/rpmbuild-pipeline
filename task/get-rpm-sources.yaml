@@ -101,6 +101,8 @@ spec:
         import json
         import os
         import random
+        import re
+        import rpm
         import sys
         from specfile import Specfile
 
@@ -129,6 +131,38 @@ spec:
                 return []
             return values
 
+        def get_macros(specfile_path):
+            """
+            RPM 4.19 deprecated the %patchN macro. RPM 4.20 removed it completely.
+            The macro works on RHEL <= 10 but does not work on Fedora 41+.
+            We can no longer even parse RPM spec files with the %patchN macros.
+            When we build for old streams, we define the %patchN macros
+            manually to be a no-op. It wouldn't build, but we only need to
+            extract a few tags that are not affected by patches. Ideally we
+            would define %patchN as a parametric macro forwarding arguments to
+            %patch -P N, but specfile library doesn't accept that.
+            Since N can be any number including zero-prefixed numbers,
+            we regex-search the spec file for %patchN uses and define only the macros found.
+            """
+            macros = []
+            # Only do this on RPM 4.19.90+ (4.19.9x were pre-releases of 4.20)
+            if tuple(int(i) for i in rpm.__version_info__) < (4, 19, 90):
+                return
+
+            try:
+                with open(specfile_path, "rb") as specfile:
+                    # Find all uses of %patchN in the spec files
+                    # Using a benevolent regex: commented out macros, etc. match as well
+                    for patch in re.findall(b"%{?patch(\\d+)\\b", specfile.read()):
+                        # We operate on bytes because we don't know the spec encoding
+                        # but the matched part only includes ASCII digits
+                        patch = patch.decode("ascii")
+                        macros.append((f"patch{patch}", "%dnl"))
+            except OSError as e:
+                pass
+
+            return macros
+
         def get_specfile():
             specfile_path = glob.glob(os.path.join('/var/workdir/source', '*.spec'))
 
@@ -140,8 +174,10 @@ spec:
                     ', '.join(specfile_path)
                 ))
 
+            macros = get_macros(specfile_path[0])
+
             try:
-                spec = Specfile(specfile_path[0])
+                spec = Specfile(specfile_path[0], macros=macros)
             except TypeError as ex:
                 raise RuntimeError("No .spec file") from ex
             except OSError as ex:
