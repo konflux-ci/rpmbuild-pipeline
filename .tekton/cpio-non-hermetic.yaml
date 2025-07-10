@@ -36,7 +36,7 @@ spec:
     - name: ociStorage
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
     - name: script-environment-image
-      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:on-pr-39570ddc03858d127fdf4824ebf3eded06f132cf
+      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:on-pr-ad1a1517e66aa2c9f492ffd61644dfa5d421e048
     - name: build-architectures
       value:
         - aarch64
