@@ -20,9 +20,9 @@ metadata:
 spec:
   params:
     - name: package-name
-      value: libecpg
+      value: python-pyroute2
     - name: git-url
-      value: "https://src.fedoraproject.org/rpms/libecpg.git"
+      value: "https://src.fedoraproject.org/rpms/python-pyroute2.git"
     - name: revision
       value: "main"
     - name: target-branch
