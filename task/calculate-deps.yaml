@@ -111,7 +111,7 @@ spec:
                               -v "$HOMEDIR/source:/source" \
                               -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \
-            mock -r fedora-rawhide-"$arch" \
+            mock -r centos-stream-9-"$arch" \
                 --spec /source/$(params.package-name).spec \
                 --sources /source --resultdir /results \
                 --calculate-build-dependencies \

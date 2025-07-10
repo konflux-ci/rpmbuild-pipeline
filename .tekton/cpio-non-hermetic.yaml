@@ -22,9 +22,9 @@ spec:
     - name: package-name
       value: cpio
     - name: git-url
-      value: "https://src.fedoraproject.org/rpms/cpio.git"
+      value: https://github.com/praiskup/example-upstream-konflux-cpio.git
     - name: revision
-      value: "main"
+      value: use-patchN
     - name: target-branch
       value: "main"
     - name: self-ref-revision
@@ -35,8 +35,8 @@ spec:
       value: -rpmbuild-pipeline
     - name: ociStorage
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
-    - name: hermetic
-      value: false
+    - name: script-environment-image
+      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:on-pr-39570ddc03858d127fdf4824ebf3eded06f132cf
     - name: build-architectures
       value:
         - aarch64
