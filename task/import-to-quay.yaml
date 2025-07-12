@@ -49,6 +49,10 @@ spec:
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
+    - name: pulp-domain
+      description: The domain to push to pulp
+    - name: pulp-repository-name
+      description: The repository name to use for pulp
   results:
     - name: IMAGE_URL
       description: Location of build artifact
@@ -96,35 +100,6 @@ spec:
             --end-time `date "+%s"` \
             --pipeline-id "$(params.pipelinerun-id)"
         echo "Gathered `ls oras-staging | wc -l` files for upload"
-
-    - name: push-to-quay-select-auth
-      image: quay.io/konflux-ci/oras:latest@sha256:8d756a91aae1fa5186efafee056446bb5e77228cf5ad9a7ae0e3f8d727da50cd
-      script: |
-        #!/usr/bin/env bash
-        set -e
-
-        cd /var/workdir/results
-
-        # Get NVR from any SRPM
-        NVR=$(<nvr.log)
-        IMAGE_URL="$(params.ociStorage).nvr-$NVR"
-
-        echo "Selecting auth for $IMAGE_URL"
-        select-oci-auth $IMAGE_URL > $HOME/auth.json
-
-        echo "Pushing to: $IMAGE_URL"
-        cd oras-staging
-        # TODO: rewrite to push/attach + xargs for bigger builds (texlive has ~580 rpms)
-        oras push \
-             --registry-config "$HOME/auth.json" \
-             --artifact-type application/vnd.rpm.build.v0 \
-             --annotation quay.expires-after=14d \
-             $IMAGE_URL \
-             `cat ../oras-push-list.txt` | tee /tmp/oras.log
-
-        grep "Digest:" /tmp/oras.log | awk '{print $2}' | tr -d '\n' > $(results.IMAGE_DIGEST.path)
-        echo -n $IMAGE_URL > $(results.IMAGE_URL.path)
-        echo -n $NVR > $(results.NVR.path)
     - name: explode-srpm
       image: $(params.script-environment-image)
       workingDir: /var/workdir/results/oras-staging
@@ -174,6 +149,65 @@ spec:
       script: |
         #!/usr/bin/env bash
         jq . sbom-merged.json
+    - name: push-to-pulp-select-auth
+      image: $(params.script-environment-image)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        if [ -f /pulp-access/cli.toml ]; then
+          cd /pulp-access
+          /usr/bin/pulp-upload.py \
+            --config cli.toml \
+            --repository_name "$(params.pulp-repository-name)" \
+            --domain "$(params.pulp-domain)" \
+            --rpm_path "/var/workdir/results" \
+            --sbom_path "/var/workdir/results/oras-staging/sbom-merged.json" \
+            --build_id "$(params.pipelinerun-id)" \
+            --namespace "$(context.taskRun.namespace)" \
+            --parent_package "$(params.package-name)" \
+            --output_json ~/pulp_results.json
+          
+          cp ~/pulp_results.json /var/workdir/results/oras-staging
+          echo "pulp_results.json:application/json" >> /var/workdir/results/oras-push-list.txt
+        else
+          echo "Pulp config file does not exist skipping push"
+        fi
+      volumeMounts:
+        - mountPath: /pulp-access
+          readOnly: true
+          name: pulp-access-credentials
+        - mountPath: /pulp-config
+          readOnly: true
+          name: pulp-config-file
+    - name: push-to-quay-select-auth
+      image: quay.io/konflux-ci/oras:latest@sha256:8d756a91aae1fa5186efafee056446bb5e77228cf5ad9a7ae0e3f8d727da50cd
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        cd /var/workdir/results
+
+        # Get NVR from any SRPM
+        NVR=$(<nvr.log)
+        IMAGE_URL="$(params.ociStorage).nvr-$NVR"
+
+        echo "Selecting auth for $IMAGE_URL"
+        select-oci-auth $IMAGE_URL > $HOME/auth.json
+
+        echo "Pushing to: $IMAGE_URL"
+        cd oras-staging
+        # TODO: rewrite to push/attach + xargs for bigger builds (texlive has ~580 rpms)
+        oras push \
+             --registry-config "$HOME/auth.json" \
+             --artifact-type application/vnd.rpm.build.v0 \
+             --annotation quay.expires-after=14d \
+             $IMAGE_URL \
+             `cat ../oras-push-list.txt` | tee /tmp/oras.log
+
+        grep "Digest:" /tmp/oras.log | awk '{print $2}' | tr -d '\n' > $(results.IMAGE_DIGEST.path)
+        echo -n $IMAGE_URL > $(results.IMAGE_URL.path)
+        echo -n $NVR > $(results.NVR.path)
     - name: upload-sbom-to-quay
       image: registry.redhat.io/rhtas/cosign-rhel9:1.1.1@sha256:3cd261cd4fed03688c6fd3c6161ae1ec69e908bbb6593ec279415414c7422535
       script: |
@@ -197,5 +231,13 @@ spec:
         echo "Found that ${SBOM_DIGEST} is the SBOM digest"
         echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
   volumes:
+    - name: pulp-access-credentials
+      secret:
+        optional: true
+        secretName: pulp-access
+    - name: pulp-config-file
+      secret:
+        optional: true
+        secretName: pulp-config
     - name: workdir
       emptyDir: {}
