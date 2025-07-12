@@ -185,7 +185,7 @@ spec:
          $(cat $(results.IMAGE_URL.path))@$(cat $(results.IMAGE_DIGEST.path))
       workingDir: /var/workdir
     - name: report-sbom-url
-      image: quay.io/konflux-ci/yq:latest@sha256:7a5039c24795582613f2889806b16fdd1ddc971f11594a983b9a6e6f027fcb32
+      image: quay.io/konflux-ci/yq:latest@sha256:15d0238843d954ee78c9c190705eb8b36f6e52c31434183c37d99a80841a635a
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/usr/bin/env bash
