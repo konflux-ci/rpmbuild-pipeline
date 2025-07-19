@@ -175,7 +175,7 @@ spec:
         #!/usr/bin/env bash
         jq . sbom-merged.json
     - name: upload-sbom-to-quay
-      image: registry.redhat.io/rhtas/cosign-rhel9:1.1.1@sha256:3cd261cd4fed03688c6fd3c6161ae1ec69e908bbb6593ec279415414c7422535
+      image: registry.redhat.io/rhtas/cosign-rhel9:1.2.0@sha256:cb53dcc3bc912dd7f12147f33af1b435eae5ff4ab83b85c0277b4004b20a0248
       script: |
         #!/usr/bin/env bash
         cosign \
