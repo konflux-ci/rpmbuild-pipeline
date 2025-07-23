@@ -133,7 +133,8 @@ spec:
         success=true
         if "$(params.hermetic)"; then
           send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
-          remote_cmd podman run --network=none \
+          remote_cmd podman run -u mockbuilder \
+                                --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
                                 "${podman_params[@]}" \
               mock --hermetic-build \
@@ -143,7 +144,8 @@ spec:
                   --sources /source --resultdir /results \
           || success=false
         else
-          remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
+          remote_cmd podman run -u mockbuilder \
+                                -e KOJI_TARGET="$(params.koji-target)" \
                                 "${podman_params[@]}" \
               mock -r fedora-rawhide-"$arch" \
                   --spec /source/$(params.package-name).spec \
