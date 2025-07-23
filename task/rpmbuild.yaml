@@ -125,14 +125,20 @@ spec:
         done
 
         podman_params=(
+            -u mockbuilder
             -v "$HOMEDIR/source:/source"
             -v "$HOMEDIR/results:/results"
             --privileged --rm -ti "$mock_img"
         )
+        
+        remote_cmd podman unshare setfacl -m u:1000:rwx -m g:135:rwx "$HOMEDIR/source" "$HOMEDIR/results"   
 
         success=true
         if "$(params.hermetic)"; then
           send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
+        
+          remote_cmd podman unshare setfacl -m u:1000:rwx -m g:135:rwx "$HOMEDIR/buildroot"
+
           remote_cmd podman run --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
                                 "${podman_params[@]}" \

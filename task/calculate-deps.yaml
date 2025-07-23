@@ -107,7 +107,11 @@ spec:
         done
 
         success=true
-        remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
+        
+        remote_cmd podman unshare setfacl -m u:1000:rwx -m g:135:rwx "$HOMEDIR/source" "$HOMEDIR/results"
+        
+        remote_cmd podman run -u mockbuilder \
+                              -e KOJI_TARGET="$(params.koji-target)" \
                               -v "$HOMEDIR/source:/source" \
                               -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \
