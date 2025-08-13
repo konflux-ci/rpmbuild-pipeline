@@ -29,13 +29,13 @@ spec:
       name: script-environment-image
       type: string
     - description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
-      name: dependencies-artifact
+      name: sources-with-lookaside-artifact
       type: string
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
       type: string
   results:
-    - name: calculation-artifact
+    - name: lockfile-artifact
       description: The Trusted Artifact URI pointing to the artifact with the result of the deps calculation.
       type: string
   stepTemplate:
@@ -47,7 +47,7 @@ spec:
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:
         - use
-        - $(params.dependencies-artifact)=/var/workdir/source
+        - $(params.sources-with-lookaside-artifact)=/var/workdir/source
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
       script: |
@@ -122,17 +122,10 @@ spec:
         remote_cmd tar xfO $HOMEDIR/results/chroot_scan.tar.gz
         $success
 
-        remote_cmd podman run -v "$HOMEDIR/results:/results" \
-                              --privileged --rm -ti "$mock_img" \
-            mock-hermetic-repo \
-            --lockfile /results/buildroot_lock.json \
-            --output-repo /results/buildroot_repo
-
-        resultdir=$workdir/results/$arch/results
+        resultdir=$workdir/lock-file
         mkdir -p "$resultdir"
         # Send only repo and lockfile, ignore other artifacts
         receive "$HOMEDIR/results/buildroot_lock.json" "$resultdir/buildroot_lock.json"
-        receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
         cat "$resultdir/buildroot_lock.json"
       volumeMounts:
         - mountPath: /ssh
@@ -147,7 +140,7 @@ spec:
         - create
         - --store
         - $(params.ociStorage)
-        - $(results.calculation-artifact.path)=/var/workdir/results
+        - $(results.lockfile-artifact.path)=/var/workdir/lock-file
   volumes:
     - name: ssh
       secret:
