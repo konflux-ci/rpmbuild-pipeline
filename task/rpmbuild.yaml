@@ -110,9 +110,13 @@ spec:
         workdir=/var/workdir
 
         remote_cmd echo "Hello from the other side!"
-        send "$workdir/source/" "$HOMEDIR/source"
 
-        remote_cmd mkdir "$HOMEDIR/results"
+        # Allow mockbuilder (group mock) to read sources, and write results
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source"
+        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
+        remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
+
+        send "$workdir/source/" "$HOMEDIR/source"
 
         mock_img=$(params.script-environment-image)
         # podman pull has --retry=3 as a default, nevertheless it works only for download of blobs,
@@ -130,14 +134,14 @@ spec:
             -v "$HOMEDIR/results:/results"
             --privileged --rm -ti "$mock_img"
         )
-        
-        remote_cmd podman unshare setfacl -m u:1000:rwx -m g:135:rwx "$HOMEDIR/source" "$HOMEDIR/results"   
 
         success=true
         if "$(params.hermetic)"; then
+
+          # Give mockbuilder rights to consume buildroot.
+          remote_cmd mkdir "$HOMEDIR/buildroot"
+          remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/buildroot"
           send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
-        
-          remote_cmd podman unshare setfacl -m u:1000:rwx -m g:135:rwx "$HOMEDIR/buildroot"
 
           remote_cmd podman run --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
