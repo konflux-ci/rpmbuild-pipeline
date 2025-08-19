@@ -98,7 +98,7 @@ spec:
       script: |
         #!/bin/bash
         set -x
-        
+
         if $(params.hermetic); then
           python3 /usr/local/bin/select_architectures.py "$@" --hermetic --results-file "$(results.skip-mpc-tasks.path)"
         else

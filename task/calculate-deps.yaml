@@ -86,7 +86,7 @@ spec:
 
         if [ "$SSH_HOST" == "localhost" ] ; then
           echo "Running at local host is not supported"
-          return -1
+          exit 1
         fi
 
         workdir=/var/workdir
@@ -124,7 +124,7 @@ spec:
 
         # display dnf logs (no matter the mock exit status), and propagate the
         # mock failure (terminates the whole script)
-        remote_cmd tar xfO $HOMEDIR/results/chroot_scan.tar.gz
+        remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
         remote_cmd podman run -v "$HOMEDIR/results:/results" \

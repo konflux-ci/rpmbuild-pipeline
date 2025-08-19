@@ -96,7 +96,7 @@ spec:
       type: string
     - name: ociStorage
       description: |
-        Quay.io namespace where the pipeline stores trusted artifacts, including
+        OCI registry URL where the pipeline stores trusted artifacts, including
         both resulting artifacts and intermediary by-products.
       default: quay.io/redhat-user-workloads/$(context.taskRun.namespace)/$(params.package-name)
 
