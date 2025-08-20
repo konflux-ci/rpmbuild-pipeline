@@ -1,0 +1,41 @@
+#! /bin/bash -xe
+
+# Fetch the source code of a given Fedora package and build it using the
+# upstream RPM Build Pipeline flavor.  This performs a non-hermetic package
+# build in the same container environment as used by Konflux.  Naturally, this
+# is not a drop-in replacement for the full Tekton pipeline.
+
+package_name=$1
+test -n "$package_name" || exit 1
+pipelinedir=$PWD
+
+workdir=$(mktemp -d "/tmp/konflux-build-$package_name-XXXXXXXX")
+
+cd "$workdir"
+
+mkdir "$package_name"
+mkdir results
+
+# Allow mockbuilder (group mock) to read sources, and write results
+podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$package_name"
+podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "results"
+
+dist-git-client clone "$package_name" --dist-git fedora
+cd "$package_name"
+#git checkout "main"
+dist-git-client sources
+cd ..
+
+# Get the currently used environment image (providing Mock)
+image=$(cat "$pipelinedir/pipeline/build-rpm-package.yaml" | \
+        yq '.spec.params[] | select(.name == "script-environment-image") | .default' )
+
+podman run --rm -ti --privileged \
+    -u mockbuilder \
+    -v "$PWD/results:/results:z" \
+    -v "$PWD/$package_name:/source:z" \
+    "$image" \
+mock -r fedora-rawhide-x86_64 \
+     --spec "/source/$package_name.spec" \
+     --sources /source \
+     --resultdir /results \
