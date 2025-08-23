@@ -173,7 +173,7 @@ spec:
           - name: name
             value: init
           - name: bundle
-            value: quay.io/redhat-appstudio-tekton-catalog/task-init:0.2@sha256:d1c3aba61f8df742a5d69e6790f8807cb692d03af7e627b541a5acdd59d7ad02
+            value: quay.io/redhat-appstudio-tekton-catalog/task-init:0.2@sha256:ebfb603b73c2e1500fa1d2c757a585bc2da5043afe0798abdf61466e26fd2b0c
           - name: kind
             value: task
         resolver: bundles
@@ -197,7 +197,7 @@ spec:
           - name: name
             value: git-clone-oci-ta
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:be82c55346e8810bd1edc5547f864064da6945979baccca7dfc99990b392a02b
+            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:4a601aeec58a1dd89c271e728fd8f0d84777825b46940c3aec27f15bab3edacf
           - name: kind
             value: task
         resolver: bundles
