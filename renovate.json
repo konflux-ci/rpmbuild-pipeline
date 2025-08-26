@@ -12,5 +12,15 @@
       "task/**"
     ]
   },
-  "prConcurrentLimit": 1
+  "prConcurrentLimit": 1,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update environment image version",
+      "managerFilePatterns": ["pipeline/build_rpm_package.yaml"],
+      "matchStrings": [
+        "default: images\\.paas\\.redhat\\.com\\/brew\\/rpmbuild-pipeline-environment-container@sha256:(?<currentValue>\\w*)"
+      ]
+    }
+  ]
 }
