@@ -10,7 +10,7 @@ There are a few integration steps you need to follow to enable RPM builds in
 
 2. **Enable the [GitHub Konflux application][gh app]** for your project.
 
-3. **Create an Application/Component** in the [Konflux UI][application-pipeline]
+3. **Create an Application/Component** in the Konflux UI of your Konflux instance
    for your package builds.
 
 4. **Add a `.tekton/` directory** to your Git project.  See [this pull
@@ -34,6 +34,5 @@ There are a few integration steps you need to follow to enable RPM builds in
 **Aaand... Enjoy!**
 
 [gh app]: https://github.com/apps/red-hat-konflux
-[application-pipeline]: https://console.redhat.com/application-pipeline
 [example package]: https://github.com/praiskup/konflux-test-package
 [example PR]: https://github.com/praiskup/konflux-test-package/pull/2/files
