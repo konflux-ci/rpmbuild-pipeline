@@ -16,11 +16,13 @@
   "customManagers": [
     {
       "customType": "regex",
+      "datasourceTemplate": "docker",
       "description": "Update environment image version",
-      "managerFilePatterns": ["pipeline/build_rpm_package.yaml"],
+      "managerFilePatterns": ["/^pipeline/build-rpm-package\\.yaml$/"],
       "matchStrings": [
-        "default: images\\.paas\\.redhat\\.com\\/brew\\/rpmbuild-pipeline-environment-container@sha256:(?<currentValue>\\w*)"
-      ]
+        "(?<depName>images\\.paas\\.redhat\\.com/brew/rpmbuild-pipeline-environment-container):(?<currentValue>[\\w]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "versioningTemplate": "docker"
     }
   ]
 }
