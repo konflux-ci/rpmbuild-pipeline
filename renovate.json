@@ -20,7 +20,7 @@
       "description": "Update environment image version",
       "managerFilePatterns": ["/^pipeline/build-rpm-package\\.yaml$/"],
       "matchStrings": [
-        "(?<depName>images\\.paas\\.redhat\\.com/brew/rpmbuild-pipeline-environment-container):(?<currentValue>[\\w]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+        "(?<depName>quay\\.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment):(?<currentValue>[\\w]+)@(?<currentDigest>sha256:[a-f0-9]+)"
       ],
       "versioningTemplate": "docker"
     }
