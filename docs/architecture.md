@@ -28,16 +28,17 @@ graph TD
   get_sources --> nosrpm_b[calculate-deps-aarch64]:::ARCH
   get_sources --> nosrpm_c[calculate-deps ...]:::ARCH
 
-  nosrpm_a --> prefetch[Download BuildRequires.
+  nosrpm_a --> prefetch_a[Prefetch x86_64.
+    Download BuildRequires.
     Pull Mock bootstrap.
     Prepare offline repositories.]
-  prefetch --> build_a[rpmbuild-x86_64]:::ARCH
+  prefetch_a --> build_a[rpmbuild-x86_64]:::ARCH
 
-  nosrpm_b --> prefetch
-  prefetch --> build_b[rpmbuild-aarch64]:::ARCH
+  nosrpm_b --> prefetch_b[Prefetch aarch64.]
+  prefetch_b --> build_b[rpmbuild-aarch64]:::ARCH
 
-  nosrpm_c --> prefetch
-  prefetch --> build_c[rpmbuild ...]:::ARCH
+  nosrpm_c --> prefetch_c[Prefetch ...]
+  prefetch_c --> build_c[rpmbuild ...]:::ARCH
 
   build_a --> Upload[upload-to-quay]
   build_b --> Upload
@@ -72,11 +73,12 @@ using [MPC][].
       requirements (see [%generate_buildrequires][]).
     - Generates a lockfile listing the required RPMs to be downloaded.
     - The lockfile is one of the sources artifacts used for producing SBOM.
-- **Download BuildRequires, etc.**
-    - Downloads RPMs listed in the lockfile to prepare a local, "offline" RPM repository.
-    - **TODO**: While this step is not architecture-specific, it's currently bundled into
-      the following `rpmbuild-*` steps.  It should be separated into its own
-      pod-native task.
+- **prefetch &lt;ARCH&gt;**
+    - Downloads RPMs (BuildRequires) listed in the lockfile to prepare a local,
+      "offline" RPM repository.
+    - **TODO**: While this step is not architecture-specific, it's currently
+      "bundled" into the previous `calculate-deps-*` Task and should be
+      separated (see progress on [issue#48][]).
 - **rpmbuild-&lt;ARCH&gt; (Mock)**
     - This step **is** [hermetic][].
     - Produces a list of "binary" RPMs (built artifacts).
@@ -102,4 +104,5 @@ using [MPC][].
 [Why Mock]: https://rpm-software-management.github.io/mock/Why-Mock
 [Mock]: https://rpm-software-management.github.io/mock/
 [DistGit]: https://github.com/release-engineering/dist-git
-[pulp cli] https://pulpproject.org/pulp-cli/docs/user/guides/configuration/
+[pulp cli]: https://pulpproject.org/pulp-cli/docs/user/guides/configuration/
+[issue#48]: https://github.com/konflux-ci/rpmbuild-pipeline/issues/48
