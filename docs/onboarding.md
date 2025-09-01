@@ -11,7 +11,7 @@ There are a few integration steps you need to follow to enable RPM builds in
    Pagure, which is not integrated with Konflux), you'll need to create a fork
    in a supported forge.  [Here is example repository][example package].
 
-2. **Enable the [GitHub Konflux application][gh app]** for your project.
+2. **Enable [GitHub Konflux application]** of your Konflux instance in your GitHub project.
 
 3. **Create an Application/Component** in the Konflux UI of your Konflux instance
    for your package builds.
@@ -37,6 +37,6 @@ There are a few integration steps you need to follow to enable RPM builds in
 **Aaand... Enjoy!**
 
 [how to setup own Konflux instance]: https://github.com/konflux-ci/konflux-ci
-[gh app]: https://github.com/apps/red-hat-konflux
+[GitHub Konflux application]: https://github.com/konflux-ci/konflux-ci?tab=readme-ov-file#enable-pipelines-triggering-via-webhooks
 [example package]: https://github.com/praiskup/konflux-test-package
 [example PR]: https://github.com/praiskup/konflux-test-package/pull/2/files
