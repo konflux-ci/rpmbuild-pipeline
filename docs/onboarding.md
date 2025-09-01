@@ -3,6 +3,9 @@
 There are a few integration steps you need to follow to enable RPM builds in
 **Konflux**:
 
+0.  **Setup your own Konflux instance or use an existing one.**
+   Information on [how to setup a Konflux instance]. 
+
 1. **Host your package sources in a compatible forge** (currently GitLab or
    GitHub).  For example, if you're working with a Fedora package (hosted on
    Pagure, which is not integrated with Konflux), you'll need to create a fork
@@ -33,6 +36,7 @@ There are a few integration steps you need to follow to enable RPM builds in
     ```
 **Aaand... Enjoy!**
 
+[how to setup own Konflux instance]: https://github.com/konflux-ci/konflux-ci
 [gh app]: https://github.com/apps/red-hat-konflux
 [example package]: https://github.com/praiskup/konflux-test-package
 [example PR]: https://github.com/praiskup/konflux-test-package/pull/2/files
