@@ -12,6 +12,7 @@ There are a few integration steps you need to follow to enable RPM builds in
    in a supported forge.  [Here is example repository][example package].
 
 2. **Enable [GitHub Konflux application]** of your Konflux instance in your GitHub project.
+   Consult documentation of the Konflux instance or their administrators.
 
 3. **Create an Application/Component** in the Konflux UI of your Konflux instance
    for your package builds.
