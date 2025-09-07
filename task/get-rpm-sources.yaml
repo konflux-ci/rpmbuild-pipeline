@@ -88,9 +88,12 @@ spec:
     - name: download
       image: $(params.script-environment-image)
       script: |
-        set -x
+        set -ex
         cd "/var/workdir/source"
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        rpmautospec process-distgit $(params.package-name).spec $(params.package-name).spec
+        git diff
+
     - name: select-mpc-machines-or-skip
       image: $(params.script-environment-image)
       args:
