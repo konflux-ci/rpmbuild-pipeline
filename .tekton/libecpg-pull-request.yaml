@@ -20,9 +20,9 @@ metadata:
 spec:
   params:
     - name: package-name
-      value: libecpg
+      value: anubis
     - name: git-url
-      value: "https://src.fedoraproject.org/rpms/libecpg.git"
+      value: "https://src.fedoraproject.org/rpms/anubis.git"
     - name: revision
       value: "main"
     - name: target-branch
