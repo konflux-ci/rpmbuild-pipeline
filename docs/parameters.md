@@ -29,10 +29,10 @@ by the pipeline's CI.
 
 | name                    | used in tasks |
 | ---                     | ---           |
-| self-ref-url            | get-rpm-sources, rpmbuild, upload-sbom |
-| self-ref-revision       | get-rpm-sources, rpmbuild, upload-sbom |
+| self-ref-url            | process-sources, rpmbuild, upload-sbom |
+| self-ref-revision       | process-sources, rpmbuild, upload-sbom |
 | test-suffix             | import-to-quay |
-| ociArtifactExpiresAfter | clone-repository, get-rpm-sources, calculate-deps, rpmbuild|
+| ociArtifactExpiresAfter | clone-repository, process-sources, calculate-deps, rpmbuild|
 
 
 ## Leftover parameters

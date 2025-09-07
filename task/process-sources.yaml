@@ -88,9 +88,17 @@ spec:
     - name: download
       image: $(params.script-environment-image)
       script: |
-        set -x
+        set -ex
         cd "/var/workdir/source"
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
+        rpmautospec process-distgit $(params.package-name).spec $(params.package-name).spec
+        git diff
+        # We remove the .git repository here to ensure that historical code does
+        # not affect the output of the build.  This is critical because the user
+        # has full control over later build process stages (even though in an
+        # isolated environment).
+        rm -r .git
     - name: select-mpc-machines-or-skip
       image: $(params.script-environment-image)
       args:

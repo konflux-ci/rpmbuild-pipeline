@@ -92,7 +92,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:056dd75fe3420b607306460f00a8d1313edca33c48e89dcc9e67bb00b282dd36
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:c17fbe61510ac8d27668aaa83a00ec0fd2935dd167b42ecc6c48d62a83644cab
       type: string
     - name: ociStorage
       description: |
@@ -210,7 +210,7 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
-    - name: get-rpm-sources
+    - name: process-sources
       retries: 3
       taskRef:
         resolver: git
@@ -220,7 +220,7 @@ spec:
           - name: revision
             value: $(params.self-ref-revision)
           - name: pathInRepo
-            value: task/get-rpm-sources.yaml
+            value: task/process-sources.yaml
           - name: ociArtifactExpiresAfter
             value: 14d
       runAfter:
@@ -242,7 +242,7 @@ spec:
           value: ["$(params.build-architectures[*])"]
     - name: calculate-deps-x86-64
       runAfter:
-        - get-rpm-sources
+        - process-sources
       params:
         - name: package-name
           value: $(params.package-name)
@@ -251,11 +251,11 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-x86_64
         - name: ociArtifactExpiresAfter
@@ -283,13 +283,13 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-x86_64)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-x86-64.results.calculation-artifact)
         - name: ociStorage
@@ -309,7 +309,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-aarch64
       runAfter:
-        - get-rpm-sources
+        - process-sources
       params:
         - name: package-name
           value: $(params.package-name)
@@ -318,11 +318,11 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-aarch64)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-aarch64
         - name: ociArtifactExpiresAfter
@@ -350,13 +350,13 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-aarch64)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-aarch64.results.calculation-artifact)
         - name: ociStorage
@@ -376,7 +376,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-s390x
       runAfter:
-        - get-rpm-sources
+        - process-sources
       params:
         - name: package-name
           value: $(params.package-name)
@@ -385,11 +385,11 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-s390x)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-s390x
         - name: ociArtifactExpiresAfter
@@ -417,13 +417,13 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-s390x)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-s390x.results.calculation-artifact)
         - name: ociStorage
@@ -443,7 +443,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-ppc64le
       runAfter:
-        - get-rpm-sources
+        - process-sources
       params:
         - name: package-name
           value: $(params.package-name)
@@ -452,11 +452,11 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-ppc64le)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-ppc64le
         - name: ociArtifactExpiresAfter
@@ -484,13 +484,13 @@ spec:
         - name: koji-target
           value: $(params.koji-target)
         - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.build-ppc64le)
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
         - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+          value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-ppc64le.results.calculation-artifact)
         - name: ociStorage

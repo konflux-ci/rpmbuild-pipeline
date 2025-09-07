@@ -22,7 +22,7 @@ Pipeline.
 ```mermaid
 graph TD
 
-  clone_repository[clone-repository] --> get_sources[get-rpm-sources /from DistGit lookaside/]
+  clone_repository[clone-repository] --> get_sources[process-sources]
 
   get_sources --> nosrpm_a[calculate-deps-x86_64]:::ARCH
   get_sources --> nosrpm_b[calculate-deps-aarch64]:::ARCH
@@ -61,9 +61,20 @@ using [MPC][].
     - This step is architecture-agnostic and is executed only once.
     - Typically, we clone the package source from a DistGit repository or a fork.
     - A full clone is required (to keep [rpmautospec][] happy).
-- **get-rpm-sources**
-    - Downloads source artifacts (e.g., source tarballs) from the corresponding
-      DistGit instance.
+- **process-sources**
+    - Downloads the precise set of source files (typically tarballs) from the
+      corresponding DistGit lookaside cache.
+    - This task provides a "frozen" set of source files for the subsequent RPM
+      builds.  The output from this task (see the ociStorage parameter)
+      represents the final set of source code files that will *exclusively*
+      affect the resulting built artifacts.  Special attention is paid to
+      ensuring the user can never take control of the execution in this task to
+      introduce unexpected code.
+    - We also remove the `.git` repository here to ensure that historical code
+      artifacts do not affect the output of the build.
+    - Any additional code pre-processing must happen here, under *our control*
+      (not user's), e.g., we expand rpmautospec `%autorelease` and
+      `%autochangelog` templates here.
 - **calculate-deps-&lt;ARCH&gt; (Mock)**
     - This step **is not** [hermetic][].  However, it is necessary in order to
       build hermetically in the subsequent **rpmbuild-&lt;ARCH&gt;** step.
