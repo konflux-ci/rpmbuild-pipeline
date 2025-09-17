@@ -32,11 +32,13 @@ spec:
     - description: Build without network access
       name: hermetic
       type: string
-    - description: The Trusted Artifact URI pointing to the artifact with the source and deps.
-      name: dependencies-artifact
+    - description: |
+        The Trusted Artifact URI pointing to the artifact with git checkout and
+        files from the lookaside cache.
+      name: sources-with-lookaside-artifact
       type: string
-    - description: The Trusted Artifact URI pointing to the artifact with the deps calculation.
-      name: calculation-artifact
+    - description: The Trusted Artifact URI pointing to the artifact with the build-deps.
+      name: build-deps-artifact
       type: string
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
@@ -60,12 +62,12 @@ spec:
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:
         - use
-        - $(params.dependencies-artifact)=/var/workdir/source
+        - $(params.sources-with-lookaside-artifact)=/var/workdir/source
     - name: use-trusted-artifact-results
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:
         - use
-        - $(params.calculation-artifact)=/var/workdir/results
+        - $(params.build-deps-artifact)=/var/workdir/results
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
       script: |

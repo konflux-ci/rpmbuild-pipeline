@@ -31,8 +31,10 @@ spec:
       name: build-architectures
       type: array
   results:
-    - name: dependencies-artifact
-      description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
+    - name: sources-with-lookaside-artifact
+      description: |
+        The Trusted Artifact URI pointing to the artifact with git checkout and
+        files from the lookaside cache.
       type: string
     - name: skip-mpc-tasks
       description: |
@@ -110,7 +112,7 @@ spec:
         - create
         - --store
         - $(params.ociStorage)
-        - $(results.dependencies-artifact.path)=/var/workdir/source
+        - $(results.sources-with-lookaside-artifact.path)=/var/workdir/source
       env:
         - name: IMAGE_EXPIRES_AFTER
           value: $(params.ociArtifactExpiresAfter)

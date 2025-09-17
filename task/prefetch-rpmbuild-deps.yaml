@@ -1,0 +1,69 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/tags: rpm-build
+  name: download-builddeps
+spec:
+  description: |-
+    Download all build-time dependencies for an RPM build, per given lockfile.
+  params:
+    - description: The Trusted Artifact URI pointing to the lockfile location.
+      name: lockfile-artifact
+      type: string
+    - name: ociStorage
+      description: The OCI repository where the Trusted Artifacts are stored.
+      type: string
+    - name: ociArtifactExpiresAfter
+      description: How long Trusted Artifacts should be retained
+      type: string
+    - description: RPM Build environment OCI image to run scripts in
+      name: script-environment-image
+      type: string
+    - description: Is the build hermetic?
+      name: hermetic
+      type: string
+  results:
+    - name: build-deps-artifact
+      description: |
+        The Trusted Artifact URI pointing to the artifact with the result of the
+        build-time deps downloads.
+      type: string
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+  steps:
+    - name: use-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.lockfile-artifact)=/var/workdir/lockfile
+    - name: download
+      image: $(params.script-environment-image)
+      script: |
+        set -ex
+        outputdir=/var/workdir/build-deps
+        mkdir -p "$outputdir"
+        lockfile=/var/workdir/lockfile/buildroot_lock.json
+        # non-hermetic mode = we don't prefetch
+        test $(params.hermetic) = true || exit 0
+        # no lockfile = calculate-deps skipped = architecture skipped
+        test -f "$lockfile" || exit 0
+        mock-hermetic-repo \
+          --lockfile /var/workdir/lockfile/buildroot_lock.json \
+          --output-repo "$outputdir"
+    - name: create-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - create
+        - --store
+        - $(params.ociStorage)
+        - $(results.build-deps-artifact.path)=/var/workdir/build-deps
+      env:
+        - name: IMAGE_EXPIRES_AFTER
+          value: $(params.ociArtifactExpiresAfter)
+  volumes:
+    - name: workdir
+      emptyDir: {}
