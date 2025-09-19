@@ -30,7 +30,7 @@ cd ..
 image=$(cat "$pipelinedir/pipeline/build-rpm-package.yaml" | \
         yq '.spec.params[] | select(.name == "script-environment-image") | .default' )
 
-podman run --rm -ti --privileged \
+podman run --rm -ti --privileged --init \
     -u mockbuilder \
     -v "$PWD/results:/results:z" \
     -v "$PWD/$package_name:/source:z" \
