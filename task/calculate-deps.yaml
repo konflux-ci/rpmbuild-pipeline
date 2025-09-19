@@ -115,7 +115,7 @@ spec:
                               -e KOJI_TARGET="$(params.koji-target)" \
                               -v "$HOMEDIR/source:/source" \
                               -v "$HOMEDIR/results:/results" \
-                              --privileged --rm -ti "$mock_img" \
+                              --init --privileged --rm -ti "$mock_img" \
             mock -r fedora-rawhide-"$arch" \
                 --spec /source/$(params.package-name).spec \
                 --sources /source --resultdir /results \

@@ -132,7 +132,7 @@ spec:
             -u mockbuilder
             -v "$HOMEDIR/source:/source"
             -v "$HOMEDIR/results:/results"
-            --privileged --rm -ti "$mock_img"
+            --init --privileged --rm -ti "$mock_img"
         )
 
         success=true
