@@ -25,6 +25,10 @@ spec:
       name: koji-target
       type: string
       default: DEFAULT
+    - description: Mock configuration file template
+      name: mock-config-template-file
+      type: string
+      default: ""
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
@@ -99,9 +103,28 @@ spec:
         remote_cmd echo "Hello from the other side!"
 
         # Allow mockbuilder (group mock) to read sources, and write results
-        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source"
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/config"
         remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
+        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/config"
+
+        VOLUME_MOUNTS=(
+          -v "$HOMEDIR/source:/source"
+          -v "$HOMEDIR/results:/results"
+        )
+
+        ROOT_CONFIG="fedora-rawhide-${arch}"
+        if [ -n "${MOCK_CONFIG_TEMPLATE_FILE}" ]; then
+          mkdir -p "$workdir/config"
+          VOLUME_MOUNTS+=(-v "$HOMEDIR/config:/config:Z")
+
+          cat <<EOF | sed "s|@ARCH@|$arch|" | tee "$workdir/config/mock.cfg"
+        ${MOCK_CONFIG_TEMPLATE_FILE}
+        EOF
+
+          send "$workdir/config/mock.cfg" "$HOMEDIR/config/mock.cfg"
+          ROOT_CONFIG="/config/mock.cfg"
+        fi
 
         send "$workdir/source/" "$HOMEDIR/source"
 
@@ -114,7 +137,7 @@ spec:
             echo "Retrying in $sleep_time seconds."
             sleep $sleep_time
         done
- 
+
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
         else
@@ -125,10 +148,9 @@ spec:
         success=true
         remote_cmd podman run -u mockbuilder \
                               -e KOJI_TARGET="$(params.koji-target)" \
-                              -v "$HOMEDIR/source:/source" \
-                              -v "$HOMEDIR/results:/results" \
+                              "${VOLUME_MOUNTS[@]}" \
                               --init --privileged --rm -ti "$mock_img" \
-            mock -r fedora-rawhide-"$arch" \
+            mock -r "$ROOT_CONFIG" \
                 --spec /source/$specfile_name \
                 --sources /source --resultdir /results \
                 --calculate-build-dependencies \
@@ -139,7 +161,10 @@ spec:
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
-        remote_cmd podman run -v "$HOMEDIR/results:/results" \
+        VOLUME_MOUNTS=(
+          -v "$HOMEDIR/results:/results"
+        )
+        remote_cmd podman run "${VOLUME_MOUNTS[@]}" \
                               --privileged --rm -ti "$mock_img" \
             mock-hermetic-repo \
             --lockfile /results/buildroot_lock.json \
@@ -151,6 +176,9 @@ spec:
         receive "$HOMEDIR/results/buildroot_lock.json" "$resultdir/buildroot_lock.json"
         receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
         cat "$resultdir/buildroot_lock.json"
+      env:
+      - name: MOCK_CONFIG_TEMPLATE_FILE
+        value: $(params.mock-config-template-file)
       volumeMounts:
         - mountPath: /ssh
           name: ssh
