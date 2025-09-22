@@ -75,6 +75,10 @@ spec:
       description: Execute the build with network isolation
       name: hermetic
       type: string
+    - default: .
+      description: Subdirectory of the source directory where the spec file is located. Needed for monorepos.
+      name: monorepo-subdir
+      type: string
     - name: self-ref-url
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
@@ -105,7 +109,10 @@ spec:
       name: specfile
       type: string
       default: "null"
-
+    - description: Location of the Mock configuration template file in source tree
+      name: mock-config-template-file
+      type: string
+      default: ""
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
     # `spec.tasks.{taskname}.timeout` defaults.  That's why we hardcode (for
@@ -240,11 +247,32 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
+        - name: monorepo-subdir
+          value: $(params.monorepo-subdir)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
-    - name: calculate-deps-x86-64
+    - name: generate-mock-config
       runAfter:
         - process-sources
+      params:
+        - name: mock-config-template-file
+          value: $(params.mock-config-template-file)
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: source-artifact
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/generate-mock-config.yaml
+    - name: calculate-deps-x86-64
+      runAfter:
+        - generate-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
@@ -252,6 +280,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
@@ -311,7 +341,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-aarch64
       runAfter:
-        - process-sources
+        - generate-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
@@ -319,6 +349,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
@@ -378,7 +410,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-s390x
       runAfter:
-        - process-sources
+        - generate-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
@@ -386,6 +418,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
@@ -445,7 +479,7 @@ spec:
             value: task/rpmbuild.yaml
     - name: calculate-deps-ppc64le
       runAfter:
-        - process-sources
+        - generate-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
@@ -453,6 +487,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
