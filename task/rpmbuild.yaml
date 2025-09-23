@@ -128,8 +128,12 @@ spec:
             sleep $sleep_time
         done
 
+        # Set the PID limit. 16384 is the maximum supported value on OpenShift
+        # to prevent resource exhaustion errors when building large packages like gcc.
+        PID_LIMIT_CONST=16384
         podman_params=(
             -u mockbuilder
+            --pids-limit=$PID_LIMIT_CONST
             -v "$HOMEDIR/source:/source"
             -v "$HOMEDIR/results:/results"
             --init --privileged --rm -ti "$mock_img"
