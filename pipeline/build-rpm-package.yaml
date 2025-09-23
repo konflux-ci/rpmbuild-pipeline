@@ -248,8 +248,8 @@ spec:
           value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-x86_64
         - name: ociArtifactExpiresAfter
@@ -265,7 +265,7 @@ spec:
             value: task/calculate-deps.yaml
     - name: rpmbuild-x86-64
       runAfter:
-        - calculate-deps-x86-64
+        - prefetch-deps-x86-64
       timeout: "72h"
       params:
         - name: package-name
@@ -280,10 +280,12 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-        - name: calculation-artifact
-          value: $(tasks.calculate-deps-x86-64.results.calculation-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-x86-64.results.lockfile-artifact)
+        - name: build-deps-artifact
+          value: $(tasks.prefetch-deps-x86-64.results.build-deps-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-x86_64
         - name: ociArtifactExpiresAfter
@@ -311,8 +313,8 @@ spec:
           value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-aarch64
         - name: ociArtifactExpiresAfter
@@ -328,7 +330,7 @@ spec:
             value: task/calculate-deps.yaml
     - name: rpmbuild-aarch64
       runAfter:
-        - calculate-deps-aarch64
+        - prefetch-deps-aarch64
       timeout: "72h"
       params:
         - name: package-name
@@ -343,10 +345,12 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-        - name: calculation-artifact
-          value: $(tasks.calculate-deps-aarch64.results.calculation-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-aarch64.results.lockfile-artifact)
+        - name: build-deps-artifact
+          value: $(tasks.prefetch-deps-aarch64.results.build-deps-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-aarch64
         - name: ociArtifactExpiresAfter
@@ -374,8 +378,8 @@ spec:
           value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-s390x
         - name: ociArtifactExpiresAfter
@@ -391,7 +395,7 @@ spec:
             value: task/calculate-deps.yaml
     - name: rpmbuild-s390x
       runAfter:
-        - calculate-deps-s390x
+        - prefetch-deps-s390x
       timeout: "72h"
       params:
         - name: package-name
@@ -406,10 +410,12 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-        - name: calculation-artifact
-          value: $(tasks.calculate-deps-s390x.results.calculation-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-s390x.results.lockfile-artifact)
+        - name: build-deps-artifact
+          value: $(tasks.prefetch-deps-s390x.results.build-deps-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-s390x
         - name: ociArtifactExpiresAfter
@@ -437,8 +443,8 @@ spec:
           value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-ppc64le
         - name: ociArtifactExpiresAfter
@@ -452,9 +458,109 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/calculate-deps.yaml
-    - name: rpmbuild-ppc64le
+    - name: prefetch-deps-x86-64
+      runAfter:
+        - calculate-deps-x86-64
+      params:
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmdeps-x86_64
+        - name: ociArtifactExpiresAfter
+          value: 14d
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-x86-64.results.lockfile-artifact)
+        - name: hermetic
+          value: $(params.hermetic)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/prefetch-rpmbuild-deps.yaml
+    - name: prefetch-deps-aarch64
+      runAfter:
+        - calculate-deps-aarch64
+      params:
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmdeps-aarch64
+        - name: ociArtifactExpiresAfter
+          value: 14d
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-aarch64.results.lockfile-artifact)
+        - name: hermetic
+          value: $(params.hermetic)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/prefetch-rpmbuild-deps.yaml
+    - name: prefetch-deps-s390x
+      runAfter:
+        - calculate-deps-s390x
+      params:
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmdeps-s390x
+        - name: ociArtifactExpiresAfter
+          value: 14d
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-s390x.results.lockfile-artifact)
+        - name: hermetic
+          value: $(params.hermetic)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/prefetch-rpmbuild-deps.yaml
+    - name: prefetch-deps-ppc64le
       runAfter:
         - calculate-deps-ppc64le
+      params:
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmdeps-ppc64le
+        - name: ociArtifactExpiresAfter
+          value: 14d
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-ppc64le.results.lockfile-artifact)
+        - name: hermetic
+          value: $(params.hermetic)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/prefetch-rpmbuild-deps.yaml
+    - name: rpmbuild-ppc64le
+      runAfter:
+        - prefetch-deps-ppc64le
       timeout: "72h"
       params:
         - name: package-name
@@ -469,10 +575,12 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-        - name: calculation-artifact
-          value: $(tasks.calculate-deps-ppc64le.results.calculation-artifact)
+        - name: sources-with-lookaside-artifact
+          value: $(tasks.get-rpm-sources.results.sources-with-lookaside-artifact)
+        - name: lockfile-artifact
+          value: $(tasks.calculate-deps-ppc64le.results.lockfile-artifact)
+        - name: build-deps-artifact
+          value: $(tasks.prefetch-deps-ppc64le.results.build-deps-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-ppc64le
         - name: ociArtifactExpiresAfter
