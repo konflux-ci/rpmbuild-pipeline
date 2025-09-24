@@ -1,11 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "dependencyDashboard": false,
   "tekton": {
-    "fileMatch": ["\\.yaml$", "\\.yml$"],
+    "managerFilePatterns": [
+      "/\\.yaml$/",
+      "/\\.yml$/"
+    ],
     "includePaths": [
       ".tekton/**",
       "pipeline/**",
@@ -18,7 +21,9 @@
       "customType": "regex",
       "datasourceTemplate": "docker",
       "description": "Update environment image version",
-      "managerFilePatterns": ["/^pipeline/build-rpm-package\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^pipeline/build-rpm-package\\.yaml$/"
+      ],
       "matchStrings": [
         "(?<depName>quay\\.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment):(?<currentValue>[\\w]+)@(?<currentDigest>sha256:[a-f0-9]+)"
       ],
