@@ -99,6 +99,12 @@ spec:
         OCI registry URL where the pipeline stores trusted artifacts, including
         both resulting artifacts and intermediary by-products.
       default: quay.io/redhat-user-workloads/$(context.taskRun.namespace)/$(params.package-name)
+    - description: |
+        Name of specfile when specfile doesn't have the same prefix name as package name.
+        Default is null and package-name.spec is used.
+      name: specfile
+      type: string
+      default: "null"
 
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
@@ -254,6 +260,8 @@ spec:
           value: $(params.ociStorage).calculation-x86_64
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -317,6 +325,8 @@ spec:
           value: $(params.ociStorage).calculation-aarch64
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -380,6 +390,8 @@ spec:
           value: $(params.ociStorage).calculation-s390x
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -443,6 +455,8 @@ spec:
           value: $(params.ociStorage).calculation-ppc64le
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:

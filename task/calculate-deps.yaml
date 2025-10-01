@@ -34,6 +34,11 @@ spec:
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
       type: string
+    - name: specfile
+      description: |
+        Name of specfile when specfile doesn't have the same prefix name as package name.
+        Default is null and package-name.spec is used.
+      type: string
   results:
     - name: calculation-artifact
       description: The Trusted Artifact URI pointing to the artifact with the result of the deps calculation.
@@ -109,6 +114,13 @@ spec:
             echo "Retrying in $sleep_time seconds."
             sleep $sleep_time
         done
+ 
+        if test "$(params.specfile)" != "null" ; then
+          specfile_name=$(params.specfile)
+        else
+          specfile_prefix=$(params.package-name)
+          specfile_name="${specfile_prefix}.spec"
+        fi
 
         success=true
         remote_cmd podman run -u mockbuilder \
@@ -117,7 +129,7 @@ spec:
                               -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \
             mock -r fedora-rawhide-"$arch" \
-                --spec /source/$(params.package-name).spec \
+                --spec /source/$specfile_name \
                 --sources /source --resultdir /results \
                 --calculate-build-dependencies \
         || success=false
