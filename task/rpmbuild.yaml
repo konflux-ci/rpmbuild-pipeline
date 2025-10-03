@@ -44,6 +44,11 @@ spec:
     - name: ociArtifactExpiresAfter
       description: How long Trusted Artifacts should be retained
       type: string
+    - name: specfile
+      description: |
+        Name of specfile when specfile doesn't have the same prefix name as package name.
+        Default is null and package-name.spec is used.
+      type: string
   results:
     - name: rpmbuild-artifact
       description: The Trusted Artifact URI pointing to the artifact with the result of the build.
@@ -139,6 +144,13 @@ spec:
             --init --privileged --rm -ti "$mock_img"
         )
 
+        if test "$(params.specfile)" != "null" ; then
+          specfile_name=$(params.specfile)
+        else
+          specfile_prefix=$(params.package-name)
+          specfile_name="${specfile_prefix}.spec"
+        fi
+
         success=true
         if "$(params.hermetic)"; then
 
@@ -153,14 +165,14 @@ spec:
               mock --hermetic-build \
                   /buildroot/results/buildroot_lock.json \
                   /buildroot/results/buildroot_repo \
-                  --spec /source/$(params.package-name).spec \
+                  --spec /source/$specfile_name \
                   --sources /source --resultdir /results \
           || success=false
         else
           remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
                                 "${podman_params[@]}" \
               mock -r fedora-rawhide-"$arch" \
-                  --spec /source/$(params.package-name).spec \
+                  --spec /source/$specfile_name \
                   --sources /source --resultdir /results \
           || success=false
         fi

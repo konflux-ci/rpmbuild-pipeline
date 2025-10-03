@@ -296,6 +296,8 @@ spec:
           value: $(params.ociStorage).rpmbuild-x86_64
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -361,6 +363,8 @@ spec:
           value: $(params.ociStorage).rpmbuild-aarch64
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -426,6 +430,8 @@ spec:
           value: $(params.ociStorage).rpmbuild-s390x
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
@@ -491,6 +497,8 @@ spec:
           value: $(params.ociStorage).rpmbuild-ppc64le
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: specfile
+          value: $(params.specfile)
       taskRef:
         resolver: git
         params:
