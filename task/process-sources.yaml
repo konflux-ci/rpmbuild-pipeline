@@ -12,6 +12,12 @@ spec:
     - description: Package name to clone
       name: package-name
       type: string
+    - name: specfile
+      description: |
+        Name of specfile when specfile doesn't have the same prefix name as
+        package name.  Default is null and $(params.package-name).spec is used.
+      type: string
+      default: "null"
     - description: The Trusted Artifact URI pointing to the artifact with the source code.
       name: source-artifact
       type: string
@@ -90,9 +96,17 @@ spec:
       script: |
         set -ex
         cd "/var/workdir/source"
+
+        if test "$(params.specfile)" != "null" ; then
+          specfile_name=$(params.specfile)
+        else
+          specfile_prefix=$(params.package-name)
+          specfile_name="${specfile_prefix}.spec"
+        fi
+
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
-        rpmautospec process-distgit $(params.package-name).spec $(params.package-name).spec
+        rpmautospec process-distgit "$specfile_name" "$specfile_name"
         git diff
         # We remove the .git repository here to ensure that historical code does
         # not affect the output of the build.  This is critical because the user

@@ -228,6 +228,8 @@ spec:
       params:
         - name: package-name
           value: $(params.package-name)
+        - name: specfile
+          value: $(params.specfile)
         - name: source-artifact
           value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
         - name: ociStorage
