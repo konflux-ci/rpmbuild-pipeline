@@ -224,7 +224,7 @@ spec:
         IMAGE_URL=$(cat $(results.IMAGE_URL.path))
         REPO=${IMAGE_URL%:*}
         echo "Found that ${REPO} is the repository for ${IMAGE_URL}"
-        SBOM_DIGEST=$(sha256sum sbom-spdx.json | awk '{ print $1 }')
+        SBOM_DIGEST=$(sha256sum sbom-merged.json | awk '{ print $1 }')
         echo "Found that ${SBOM_DIGEST} is the SBOM digest"
         echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
   volumes:
