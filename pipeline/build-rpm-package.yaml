@@ -75,6 +75,11 @@ spec:
       description: Execute the build with network isolation
       name: hermetic
       type: string
+    - default: .
+      description: Path to the source code of an application's component from where
+        to build rpm.
+      name: path-context
+      type: string
     - name: self-ref-url
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
@@ -240,6 +245,8 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
+        - name: context
+          value: $(params.path-context)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
     - name: calculate-deps-x86-64
