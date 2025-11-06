@@ -47,6 +47,8 @@ spec:
         value: "{{ revision }}"
       - name: pathInRepo
         value: pipeline/build-rpm-package.yaml
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-ci-for-pipeline
   workspaces:
     - name: git-auth
       secret:

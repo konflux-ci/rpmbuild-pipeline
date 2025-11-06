@@ -117,9 +117,11 @@ spec:
         remote_cmd echo "Hello from the other side!"
 
         # Allow mockbuilder (group mock) to read sources, and write results
-        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source"
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/var_lib_mock"
         remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
+        remote_cmd podman unshare chgrp 135 "$HOMEDIR/var_lib_mock"
+        remote_cmd podman unshare chmod g+rwx "$HOMEDIR/var_lib_mock"
 
         send "$workdir/source/" "$HOMEDIR/source"
 
@@ -141,7 +143,9 @@ spec:
             --pids-limit=$PID_LIMIT_CONST
             -v "$HOMEDIR/source:/source"
             -v "$HOMEDIR/results:/results"
-            --init --privileged --rm -ti "$mock_img"
+            -v "$HOMEDIR/var_lib_mock:/var/lib/mock"
+            --init --privileged --rm -ti
+            --security-opt label=disable "$mock_img"
         )
 
         if test "$(params.specfile)" != "null" ; then

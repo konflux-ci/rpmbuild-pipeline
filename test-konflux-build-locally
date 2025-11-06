@@ -15,10 +15,13 @@ cd "$workdir"
 
 mkdir "$package_name"
 mkdir results
+mkdir var_lib_mock
 
 # Allow mockbuilder (group mock) to read sources, and write results
 podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$package_name"
 podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "results"
+podman unshare chgrp 135 "var_lib_mock"
+podman unshare chmod g+rwx "var_lib_mock"
 
 dist-git-client clone "$package_name" --dist-git fedora
 cd "$package_name"
@@ -35,6 +38,8 @@ podman run --rm -ti --privileged --init \
     -u mockbuilder \
     -v "$PWD/results:/results:z" \
     -v "$PWD/$package_name:/source:z" \
+    -v "$PWD/var_lib_mock:/var/lib/mock:z" \
+    --security-opt label=disable \
     "$image" \
 mock -r fedora-rawhide-x86_64 \
      --spec "/source/$package_name.spec" \
