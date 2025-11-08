@@ -206,7 +206,7 @@ spec:
           readOnly: true
           name: pulp-access-credentials
     - name: upload-sbom-to-quay
-      image: registry.redhat.io/rhtas/cosign-rhel9:1.1.1@sha256:3cd261cd4fed03688c6fd3c6161ae1ec69e908bbb6593ec279415414c7422535
+      image: registry.redhat.io/rhtas/cosign-rhel9:1.3.0@sha256:fc31f6169831d6dc2102bb6c21df224f19955551245c7476ed61e4ca439a2e43
       script: |
         #!/usr/bin/env bash
         cosign \
