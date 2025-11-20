@@ -18,7 +18,7 @@ spec:
       name: source-artifact
       type: string
   results:
-    - name: mock-config-template-file
+    - name: mock-config-template-file-content
       type: string
       description: Generated Mock configuration template (as a string)
   stepTemplate:
@@ -42,14 +42,14 @@ spec:
           configFile="/var/workdir/source/$(params.mock-config-template-file)"
           if [ -f "$configFile" ]; then
             echo "Using Mock configuration template file: $configFile"
-            cat "$configFile" > "$(results.mock-config-template-file.path)"
+            cat "$configFile" > "$(results.mock-config-template-file-content.path)"
           else
             echo "Mock configuration template file not found: $configFile"
             exit 1
           fi
         else
           echo "Mock configuration template file not specified"
-          echo -n "" > "$(results.mock-config-template-file.path)"
+          echo -n "" > "$(results.mock-config-template-file-content.path)"
         fi
   volumes:
     - name: workdir

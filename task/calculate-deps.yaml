@@ -25,8 +25,8 @@ spec:
       name: koji-target
       type: string
       default: DEFAULT
-    - description: Mock configuration file template
-      name: mock-config-template-file
+    - description: Mock configuration file template content
+      name: mock-config-template-file-content
       type: string
       default: ""
     - description: RPM Build environment OCI image to run scripts in
@@ -177,8 +177,8 @@ spec:
         receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
         cat "$resultdir/buildroot_lock.json"
       env:
-      - name: MOCK_CONFIG_TEMPLATE_FILE
-        value: $(params.mock-config-template-file)
+      - name: MOCK_CONFIG_TEMPLATE_FILE_CONTENT
+        value: "$(params.mock-config-template-file-content)"
       volumeMounts:
         - mountPath: /ssh
           name: ssh
