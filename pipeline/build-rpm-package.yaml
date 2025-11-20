@@ -280,8 +280,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
-        - name: mock-config-template-file
-          value: $(tasks.generate-mock-config.results.mock-config-template-file)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
@@ -349,8 +349,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
-        - name: mock-config-template-file
-          value: $(tasks.generate-mock-config.results.mock-config-template-file)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
@@ -418,8 +418,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
-        - name: mock-config-template-file
-          value: $(tasks.generate-mock-config.results.mock-config-template-file)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
@@ -487,8 +487,8 @@ spec:
           value: $(params.target-branch)
         - name: koji-target
           value: $(params.koji-target)
-        - name: mock-config-template-file
-          value: $(tasks.generate-mock-config.results.mock-config-template-file)
+        - name: mock-config-template-file-content
+          value: $(tasks.generate-mock-config.results.mock-config-template-file-content)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
