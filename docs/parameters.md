@@ -10,6 +10,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | revision            | Revision of the Source Repository. Typically use `{{ revision }}`.                   |                                     |
 | target-branch       | What is the package branch we work with, e.g., `rhel-10-main`, `{{ target_branch }}` |                                     |
 | build-architectures | Array of architectures we want to build for                                          | `[aarch64, s390x, ppc64le, x86_64]` |
+| build-platforms     | Array of Multi-Platform Labels (MPLs) specifying host resources (e.g. large/amd64). This configuration determines the VM allocation for architecture-specific tasks. Available labels depend on the cluster configuration. | []                                  |
 | hermetic            | Perform the RPM build in a hermetic (offline) environment.                           | true                                |
 | script-environment-image | Multi-arch OCI image that includes Mock and other tooling required by Pipeline tasks. | Check the [main branch][mock-image] |
 | specfile            | Specfile name. Default is null and package-name.spec is used.                        | null                                |

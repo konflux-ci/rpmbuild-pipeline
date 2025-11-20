@@ -39,6 +39,10 @@ spec:
     - description: List of architectures we build RPMs for
       name: build-architectures
       type: array
+    - description: List of platform overrides (MPLs)
+      name: build-platforms
+      type: array
+      default: []
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
@@ -130,6 +134,8 @@ spec:
       image: $(params.script-environment-image)
       args:
         - "$(params.build-architectures[*])"
+        - "--platform-labels"
+        - "$(params.build-platforms[*])"
       script: |
         #!/bin/bash
         set -x
