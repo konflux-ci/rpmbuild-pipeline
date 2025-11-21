@@ -13,6 +13,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | hermetic            | Perform the RPM build in a hermetic (offline) environment.                           | true                                |
 | mock-image          | Mock Container image used to perform RPM builds in the pipeline.                     | Check the [main branch][mock-image] |
 | specfile            | Specfile name. Default is null and package-name.spec is used.                        | null                                |
+| spec-file-path      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                |
 
 
 ## Parametrizing timeouts

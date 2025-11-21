@@ -33,10 +33,9 @@ spec:
     - description: Is the build hermetic?
       name: hermetic
       type: string
-    - name: context
-      description: Path to the directory to use as context.
+    - name: spec-file-path
+      description: Path to the spec file relative to the source directory.
       type: string
-      default: .
     - description: List of architectures we build RPMs for
       name: build-architectures
       type: array
@@ -90,8 +89,8 @@ spec:
       - mountPath: /var/workdir
         name: workdir
     env:
-      - name: CONTEXT
-        value: $(params.context)
+      - name: SPEC_FILE_PATH
+        value: $(params.spec-file-path)
   steps:
     - name: use-trusted-artifact
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
@@ -102,7 +101,7 @@ spec:
       image: $(params.script-environment-image)
       script: |
         set -ex
-        cd "/var/workdir/source/${CONTEXT}"
+        cd "/var/workdir/source/${SPEC_FILE_PATH}"
 
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
@@ -129,7 +128,7 @@ spec:
       script: |
         #!/bin/bash
         set -x
-        working_dir="/var/workdir/source/${CONTEXT}"
+        working_dir="/var/workdir/source/${SPEC_FILE_PATH}"
         cd "${working_dir}"
 
         if $(params.hermetic); then
@@ -143,7 +142,7 @@ spec:
         - create
         - --store
         - $(params.ociStorage)
-        - $(results.dependencies-artifact.path)=/var/workdir/source/$(params.context)
+        - $(results.dependencies-artifact.path)=/var/workdir/source/$(params.spec-file-path)
       env:
         - name: IMAGE_EXPIRES_AFTER
           value: $(params.ociArtifactExpiresAfter)
