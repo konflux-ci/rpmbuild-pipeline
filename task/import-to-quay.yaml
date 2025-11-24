@@ -151,12 +151,9 @@ spec:
         done
 
         echo "Decompressing found archives"
-        # TODO: improve detecting archives
-        tar -vxf ./*.tar
-        tar -vxzf ./*.tar.gz
-        tar -vxzf ./*.tgz
-        tar -vxJf ./*.tar.xz
-        tar -vxjf ./*.tar.bz2
+        for tarball in *.tar* *.tg* ; do
+          tar -vxf "$tarball"
+        done
         #unzip ./*.zip &>/dev/null # missing in mock image
         true
     - name: run-syft
