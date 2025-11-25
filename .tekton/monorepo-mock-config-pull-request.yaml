@@ -40,7 +40,7 @@ spec:
         - x86_64
     - name: specfile
       value: "hello.spec"
-    - name: spec-file-path
+    - name: monorepo-subdir
       value: "rpms/hello"
     - name: mock-config-template-file
       value: "mock/mock.cfg"

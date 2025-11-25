@@ -76,8 +76,8 @@ spec:
       name: hermetic
       type: string
     - default: .
-      description: Path to the spec file relative to the source directory. Needed for monorepos.
-      name: spec-file-path
+      description: Subdirectory of the source directory where the spec file is located. Needed for monorepos.
+      name: monorepo-subdir
       type: string
     - name: self-ref-url
       description: |
@@ -247,8 +247,8 @@ spec:
           value: $(params.script-environment-image)
         - name: hermetic
           value: $(params.hermetic)
-        - name: spec-file-path
-          value: $(params.spec-file-path)
+        - name: monorepo-subdir
+          value: $(params.monorepo-subdir)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
     - name: generate-mock-config

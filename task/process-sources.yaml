@@ -33,8 +33,8 @@ spec:
     - description: Is the build hermetic?
       name: hermetic
       type: string
-    - name: spec-file-path
-      description: Path to the spec file relative to the source directory.
+    - name: monorepo-subdir
+      description: Subdirectory of the source directory where the spec file is located.
       type: string
     - description: List of architectures we build RPMs for
       name: build-architectures
@@ -89,8 +89,8 @@ spec:
       - mountPath: /var/workdir
         name: workdir
     env:
-      - name: SPEC_FILE_PATH
-        value: $(params.spec-file-path)
+      - name: MONOREPO_SUBDIR
+        value: $(params.monorepo-subdir)
   steps:
     - name: use-trusted-artifact
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
@@ -101,7 +101,7 @@ spec:
       image: $(params.script-environment-image)
       script: |
         set -ex
-        cd "/var/workdir/source/${SPEC_FILE_PATH}"
+        cd "/var/workdir/source/${MONOREPO_SUBDIR}"
 
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
@@ -112,7 +112,11 @@ spec:
 
         dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
-        rpmautospec process-distgit "$specfile_name" "$specfile_name"
+        if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
+          rpmautospec process-distgit "$specfile_name" "$specfile_name"
+        else
+          echo "'rpmautospec process-distgit' is not supported for monorepos"
+        fi
 
         cd "/var/workdir/source"
         git diff
@@ -128,7 +132,7 @@ spec:
       script: |
         #!/bin/bash
         set -x
-        working_dir="/var/workdir/source/${SPEC_FILE_PATH}"
+        working_dir="/var/workdir/source/${MONOREPO_SUBDIR}"
         cd "${working_dir}"
 
         if $(params.hermetic); then
@@ -142,7 +146,7 @@ spec:
         - create
         - --store
         - $(params.ociStorage)
-        - $(results.dependencies-artifact.path)=/var/workdir/source/$(params.spec-file-path)
+        - $(results.dependencies-artifact.path)=/var/workdir/source/$(params.monorepo-subdir)
       env:
         - name: IMAGE_EXPIRES_AFTER
           value: $(params.ociArtifactExpiresAfter)
