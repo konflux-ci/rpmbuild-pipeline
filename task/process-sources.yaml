@@ -36,12 +36,18 @@ spec:
     - name: monorepo-subdir
       description: Subdirectory of the source directory where the spec file is located.
       type: string
+    - description: File containing the Mock configuration template in source tree
+      name: mock-config-template-file
+      type: string
     - description: List of architectures we build RPMs for
       name: build-architectures
       type: array
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
+      type: string
+    - name: mock-config-artifact
+      description: The Trusted Artifact URI pointing to the artifact with the mock configuration template.
       type: string
     - name: skip-mpc-tasks
       description: |
@@ -84,6 +90,9 @@ spec:
           type: string
         build-i686:
           type: string
+    - name: mock-config-template-file
+      type: string
+      description: File containing the Mock configuration template in source tree
   stepTemplate:
     volumeMounts:
       - mountPath: /var/workdir
@@ -119,6 +128,29 @@ spec:
         fi
 
         cd "/var/workdir/source"
+        mkdir -p "/var/workdir/mock-config"
+
+        if [ -n "$(params.mock-config-template-file)" ]; then
+          # in the case of a monorepo, the mock configuration template file needs to be in the
+          # same directory as the spec file. This way, when the trusted artifact of the source
+          # is created, the mock configuration template file is also included.
+          # the mock configuation template file name is then available for downstream tasks
+          # via the results.mock-config-template-file parameter.
+          configFile="/var/workdir/source/$(params.mock-config-template-file)"
+          targetFileName="mock-$(context.taskRun.uid).cfg"
+          targetFile="/var/workdir/mock-config/${targetFileName}"
+          if [ -f "$configFile" ]; then
+            echo "Copying Mock configuration template file: $configFile to $targetFile"
+            cp "$configFile" "$targetFile"
+            echo -n "$targetFileName" > "$(results.mock-config-template-file.path)"
+          else
+            echo "Mock configuration template file not found: $configFile"
+            exit 1
+          fi
+        else
+          echo -n "" > "$(results.mock-config-template-file.path)"
+        fi
+
         git diff
         # We remove the .git repository here to ensure that historical code does
         # not affect the output of the build.  This is critical because the user
@@ -149,6 +181,16 @@ spec:
         # when dealing with monorepos, we only are interested in the sources for the spec file, not the entire monorepo.
         # therefore we need to copy the sources for the spec file to the dependencies artifact.
         - $(results.dependencies-artifact.path)=/var/workdir/source/$(params.monorepo-subdir)
+      env:
+        - name: IMAGE_EXPIRES_AFTER
+          value: $(params.ociArtifactExpiresAfter)
+    - name: create-trusted-artifact-mock-config
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - create
+        - --store
+        - $(params.ociStorage)
+        - $(results.mock-config-artifact.path)=/var/workdir/mock-config
       env:
         - name: IMAGE_EXPIRES_AFTER
           value: $(params.ociArtifactExpiresAfter)

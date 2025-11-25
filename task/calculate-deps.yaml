@@ -26,7 +26,7 @@ spec:
       type: string
       default: DEFAULT
     - description: Mock configuration file template content
-      name: mock-config-template-file-content
+      name: mock-config-template-file
       type: string
       default: ""
     - description: RPM Build environment OCI image to run scripts in
@@ -34,6 +34,9 @@ spec:
       type: string
     - description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
       name: dependencies-artifact
+      type: string
+    - description: The Trusted Artifact URI pointing to the artifact with the mock configuration template.
+      name: mock-config-artifact
       type: string
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
@@ -57,6 +60,11 @@ spec:
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
+    - name: use-trusted-artifact-mock-config
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.mock-config-artifact)=/var/workdir/mock-config
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
       script: |
@@ -103,27 +111,30 @@ spec:
         remote_cmd echo "Hello from the other side!"
 
         # Allow mockbuilder (group mock) to read sources, and write results
-        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/config"
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/mock-config"
         remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
-        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/config"
+        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/mock-config"
 
         VOLUME_MOUNTS=(
           -v "$HOMEDIR/source:/source"
           -v "$HOMEDIR/results:/results"
         )
+        mkdir -p "$workdir/mock-config"
 
         ROOT_CONFIG="fedora-rawhide-${arch}"
-        if [ -n "${MOCK_CONFIG_TEMPLATE_FILE}" ]; then
-          mkdir -p "$workdir/config"
-          VOLUME_MOUNTS+=(-v "$HOMEDIR/config:/config")
+        if [ -n "$(params.mock-config-template-file)" ]; then
+          mock_config_file="$workdir/mock-config/$(params.mock-config-template-file)"
+          if [ -f "$mock_config_file" ]; then
+            sed -i "s|@ARCH@|$arch|" "$mock_config_file"
+            VOLUME_MOUNTS+=(-v "$HOMEDIR/mock-config:/mock-config")
 
-          cat <<EOF | sed "s|@ARCH@|$arch|" | tee "$workdir/config/mock.cfg"
-        ${MOCK_CONFIG_TEMPLATE_FILE}
-        EOF
-
-          send "$workdir/config/mock.cfg" "$HOMEDIR/config/mock.cfg"
-          ROOT_CONFIG="/config/mock.cfg"
+            send "$mock_config_file" "$HOMEDIR/mock-config/$(params.mock-config-template-file)"
+            ROOT_CONFIG="/mock-config/$(params.mock-config-template-file)"
+          else
+            echo "Mock configuration template file not found: $mock_config_file"
+            exit 1
+          fi
         fi
 
         send "$workdir/source/" "$HOMEDIR/source"
@@ -176,9 +187,6 @@ spec:
         receive "$HOMEDIR/results/buildroot_lock.json" "$resultdir/buildroot_lock.json"
         receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
         cat "$resultdir/buildroot_lock.json"
-      env:
-      - name: MOCK_CONFIG_TEMPLATE_FILE_CONTENT
-        value: "$(params.mock-config-template-file-content)"
       volumeMounts:
         - mountPath: /ssh
           name: ssh
