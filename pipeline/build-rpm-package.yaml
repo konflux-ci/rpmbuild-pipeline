@@ -75,6 +75,10 @@ spec:
       description: Execute the build with network isolation
       name: hermetic
       type: string
+    - name: build-platforms
+      description: List of platform overrides (MPLs).
+      type: array
+      default: []
     - name: self-ref-url
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
@@ -242,6 +246,8 @@ spec:
           value: $(params.hermetic)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
+        - name: build-platforms
+          value: ["$(params.build-platforms[*])"]
     - name: calculate-deps-x86-64
       runAfter:
         - process-sources
