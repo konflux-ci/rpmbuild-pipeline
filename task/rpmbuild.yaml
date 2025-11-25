@@ -49,6 +49,13 @@ spec:
         Name of specfile when specfile doesn't have the same prefix name as package name.
         Default is null and package-name.spec is used.
       type: string
+    - description: Mock configuration file template content
+      name: mock-config-template-file
+      type: string
+      default: ""
+    - description: The Trusted Artifact URI pointing to the artifact with the mock configuration template.
+      name: mock-config-artifact
+      type: string
   results:
     - name: rpmbuild-artifact
       description: The Trusted Artifact URI pointing to the artifact with the result of the build.
@@ -71,6 +78,11 @@ spec:
       args:
         - use
         - $(params.calculation-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-mock-config
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.mock-config-artifact)=/var/workdir/mock-config
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
       script: |
@@ -117,11 +129,12 @@ spec:
         remote_cmd echo "Hello from the other side!"
 
         # Allow mockbuilder (group mock) to read sources, and write results
-        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/var_lib_mock"
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/var_lib_mock" "$HOMEDIR/mock-config"
         remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
         remote_cmd podman unshare chgrp 135 "$HOMEDIR/var_lib_mock"
         remote_cmd podman unshare chmod g+rwx "$HOMEDIR/var_lib_mock"
+        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/mock-config"
 
         send "$workdir/source/" "$HOMEDIR/source"
 
@@ -148,6 +161,20 @@ spec:
             --security-opt label=disable "$mock_img"
         )
 
+        ROOT_CONFIG="fedora-rawhide-${arch}"
+        if [ -n "$(params.mock-config-template-file)" ]; then
+          mock_config_file="$workdir/mock-config/$(params.mock-config-template-file)"
+          sed -i "s|@ARCH@|$arch|" "$mock_config_file"
+          podman_params=(-v "$HOMEDIR/mock-config:/mock-config" "${podman_params[@]}")
+          # create the target directory in the mock-config directory
+          targetFile="$HOMEDIR/mock-config/$(params.mock-config-template-file)"
+          targetDir=$(dirname "$targetFile")
+          remote_cmd mkdir -p "$targetDir"
+
+          send "$mock_config_file" "$HOMEDIR/mock-config/$(params.mock-config-template-file)"
+          ROOT_CONFIG="/mock-config/$(params.mock-config-template-file)"
+        fi
+
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
         else
@@ -157,7 +184,9 @@ spec:
 
         success=true
         if "$(params.hermetic)"; then
-
+          if [ -n "$(params.mock-config-template-file)" ]; then
+            echo "Warning: mock-config-template-file was provided but will be ignored for hermetic builds." >&2
+          fi
           # Give mockbuilder rights to consume buildroot.
           remote_cmd mkdir "$HOMEDIR/buildroot"
           remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/buildroot"
@@ -175,7 +204,7 @@ spec:
         else
           remote_cmd podman run -e KOJI_TARGET="$(params.koji-target)" \
                                 "${podman_params[@]}" \
-              mock -r fedora-rawhide-"$arch" \
+              mock -r "$ROOT_CONFIG" \
                   --spec /source/$specfile_name \
                   --sources /source --resultdir /results \
           || success=false
