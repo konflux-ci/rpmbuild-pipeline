@@ -157,7 +157,7 @@ spec:
         #unzip ./*.zip &>/dev/null # missing in mock image
         true
     - name: run-syft
-      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.19.0@sha256:070ecb89de5104bb64fbf399a991a975e7d4d7e0cea0f7beb1e591b5591991c8
+      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
       workingDir: /var/workdir/results/oras-staging
       script: |
         syft ./syft-extracted -o spdx-json > syft-sbom.json
