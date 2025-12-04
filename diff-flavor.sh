@@ -34,6 +34,7 @@ pipeline/build-rpm-package.yaml
 task/calculate-deps.yaml
 task/check-noarch.yaml
 task/process-sources.yaml
+task/prepare-mock-config.yaml
 task/import-to-quay.yaml
 task/rpmbuild.yaml
 renovate.json

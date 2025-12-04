@@ -42,7 +42,7 @@ spec:
       value: "hello.spec"
     - name: monorepo-subdir
       value: "rpms/hello"
-    - name: mock-config-template-file
+    - name: mock-config-template-filename-in-sources
       value: "mock/mock.cfg"
       # This is a non-hermetic build, so we can test passing
       #the mock config template file as a parameter.

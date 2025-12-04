@@ -59,10 +59,6 @@ spec:
         - ppc64le
         - s390x
         - x86_64
-    - description: Koji target to use
-      name: koji-target
-      type: string
-      default: DEFAULT
     - default: "false"
       description: Force rebuild image
       name: rebuild
@@ -79,6 +75,10 @@ spec:
       description: Subdirectory of the source directory where the spec file is located. Needed for monorepos.
       name: monorepo-subdir
       type: string
+    - description: If Mock Config template exists within source dir, specify where.
+      name: mock-config-template-filename-in-sources
+      type: string
+      default: ""
     - name: self-ref-url
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
@@ -109,10 +109,6 @@ spec:
       name: specfile
       type: string
       default: "null"
-    - description: Location of the Mock configuration template file in source tree
-      name: mock-config-template-file
-      type: string
-      default: ""
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
     # `spec.tasks.{taskname}.timeout` defaults.  That's why we hardcode (for
@@ -251,28 +247,49 @@ spec:
           value: $(params.monorepo-subdir)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
-        - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
+    - name: prepare-mock-config
+      retries: 3
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/prepare-mock-config.yaml
+      runAfter:
+        - clone-repository
+      params:
+        - name: source-artifact
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+        - name: ociStorage
+          value: $(params.ociStorage).mock-config
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: mock-config-template-filename-in-sources
+          value: $(params.mock-config-template-filename-in-sources)
+        - name: chroot
+          value: fedora-rawhide-@ARCH@
+        - name: ociArtifactExpiresAfter
+          value: 14d
     - name: calculate-deps-x86-64
       runAfter:
         - process-sources
+        - prepare-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
         - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-x86_64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
           value: $(tasks.process-sources.results.dependencies-artifact)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-x86_64
         - name: ociArtifactExpiresAfter
@@ -297,8 +314,8 @@ spec:
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.build-x86_64)
         - name: script-environment-image
@@ -309,10 +326,6 @@ spec:
           value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-x86-64.results.calculation-artifact)
-        - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-x86_64
         - name: ociArtifactExpiresAfter
@@ -331,23 +344,20 @@ spec:
     - name: calculate-deps-aarch64
       runAfter:
         - process-sources
+        - prepare-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
         - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-aarch64)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
           value: $(tasks.process-sources.results.dependencies-artifact)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-aarch64
         - name: ociArtifactExpiresAfter
@@ -372,8 +382,8 @@ spec:
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.build-aarch64)
         - name: script-environment-image
@@ -384,10 +394,6 @@ spec:
           value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-aarch64.results.calculation-artifact)
-        - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-aarch64
         - name: ociArtifactExpiresAfter
@@ -406,23 +412,20 @@ spec:
     - name: calculate-deps-s390x
       runAfter:
         - process-sources
+        - prepare-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
         - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-s390x)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
           value: $(tasks.process-sources.results.dependencies-artifact)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-s390x
         - name: ociArtifactExpiresAfter
@@ -447,8 +450,8 @@ spec:
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.build-s390x)
         - name: script-environment-image
@@ -459,10 +462,6 @@ spec:
           value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-s390x.results.calculation-artifact)
-        - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-s390x
         - name: ociArtifactExpiresAfter
@@ -481,23 +480,20 @@ spec:
     - name: calculate-deps-ppc64le
       runAfter:
         - process-sources
+        - prepare-mock-config
       params:
         - name: package-name
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
         - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.deps-ppc64le)
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: dependencies-artifact
           value: $(tasks.process-sources.results.dependencies-artifact)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-ppc64le
         - name: ociArtifactExpiresAfter
@@ -522,8 +518,8 @@ spec:
           value: $(params.package-name)
         - name: target-branch
           value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
         - name: PLATFORM
           value: $(tasks.process-sources.results.skip-mpc-tasks.build-ppc64le)
         - name: script-environment-image
@@ -534,10 +530,6 @@ spec:
           value: $(tasks.process-sources.results.dependencies-artifact)
         - name: calculation-artifact
           value: $(tasks.calculate-deps-ppc64le.results.calculation-artifact)
-        - name: mock-config-template-file
-          value: $(params.mock-config-template-file)
-        - name: mock-config-artifact
-          value: $(tasks.process-sources.results.mock-config-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-ppc64le
         - name: ociArtifactExpiresAfter

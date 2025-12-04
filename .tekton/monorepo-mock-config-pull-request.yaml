@@ -42,7 +42,7 @@ spec:
       value: "hello.spec"
     - name: monorepo-subdir
       value: "rpms/hello"
-    - name: mock-config-template-file
+    - name: mock-config-template-filename-in-sources
       value: "mock/mock.cfg"
   pipelineRef:
     resolver: git

@@ -21,22 +21,14 @@ spec:
     - description: The branch name we build against/from
       name: target-branch
       type: string
-    - description: Koji target to use
-      name: koji-target
-      type: string
-      default: DEFAULT
-    - description: Mock configuration file template content
+    - description: Mock configuration template file (trusted-artifact, string content)
       name: mock-config-template-file
       type: string
-      default: ""
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
     - description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
       name: dependencies-artifact
-      type: string
-    - description: The Trusted Artifact URI pointing to the artifact with the mock configuration template.
-      name: mock-config-artifact
       type: string
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
@@ -64,7 +56,7 @@ spec:
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
       args:
         - use
-        - $(params.mock-config-artifact)=/var/workdir/mock-config
+        - $(params.mock-config-template-file)=/var/workdir/mock-config
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
       script: |
@@ -110,31 +102,14 @@ spec:
 
         remote_cmd echo "Hello from the other side!"
 
+        # Instantiate the given Mock config template for our architecture.
+        sed "s|@ARCH@|$arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
+        send "$workdir/mock.cfg" "$HOMEDIR/mock.cfg"
+
         # Allow mockbuilder (group mock) to read sources, and write results
-        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source" "$HOMEDIR/mock-config"
+        remote_cmd mkdir "$HOMEDIR/results" "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/source"
         remote_cmd podman unshare setfacl -m g:135:rwx -m default:g:135:rwx "$HOMEDIR/results"
-        remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/mock-config"
-
-        VOLUME_MOUNTS=(
-          -v "$HOMEDIR/source:/source"
-          -v "$HOMEDIR/results:/results"
-        )
-        mkdir -p "$workdir/mock-config"
-
-        ROOT_CONFIG="fedora-rawhide-${arch}"
-        if [ -n "$(params.mock-config-template-file)" ]; then
-          mock_config_file="$workdir/mock-config/$(params.mock-config-template-file)"
-          sed -i "s|@ARCH@|$arch|" "$mock_config_file"
-          VOLUME_MOUNTS+=(-v "$HOMEDIR/mock-config:/mock-config")
-          # create the target directory in the mock-config directory
-          targetFile="$HOMEDIR/mock-config/$(params.mock-config-template-file)"
-          targetDir=$(dirname "$targetFile")
-          remote_cmd mkdir -p "$targetDir"
-
-          send "$mock_config_file" "$HOMEDIR/mock-config/$(params.mock-config-template-file)"
-          ROOT_CONFIG="/mock-config/$(params.mock-config-template-file)"
-        fi
 
         send "$workdir/source/" "$HOMEDIR/source"
 
@@ -157,10 +132,11 @@ spec:
 
         success=true
         remote_cmd podman run -u mockbuilder \
-                              -e KOJI_TARGET="$(params.koji-target)" \
-                              "${VOLUME_MOUNTS[@]}" \
+                              -v "$HOMEDIR/source:/source" \
+                              -v "$HOMEDIR/results:/results" \
+                              -v "$HOMEDIR/mock.cfg:/mock.cfg" \
                               --init --privileged --rm -ti "$mock_img" \
-            mock -r "$ROOT_CONFIG" \
+            mock -r /mock.cfg \
                 --spec /source/$specfile_name \
                 --sources /source --resultdir /results \
                 --calculate-build-dependencies \
@@ -171,10 +147,7 @@ spec:
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
-        VOLUME_MOUNTS=(
-          -v "$HOMEDIR/results:/results"
-        )
-        remote_cmd podman run "${VOLUME_MOUNTS[@]}" \
+        remote_cmd podman run -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \
             mock-hermetic-repo \
             --lockfile /results/buildroot_lock.json \
