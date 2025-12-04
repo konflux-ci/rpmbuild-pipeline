@@ -11,10 +11,10 @@ Below is the set of supported parameters accepted by the pipeline.
 | target-branch       | What is the package branch we work with, e.g., `rhel-10-main`, `{{ target_branch }}` |                                     |
 | build-architectures | Array of architectures we want to build for                                          | `[aarch64, s390x, ppc64le, x86_64]` |
 | hermetic            | Perform the RPM build in a hermetic (offline) environment.                           | true                                |
-| mock-image          | Mock Container image used to perform RPM builds in the pipeline.                     | Check the [main branch][mock-image] |
+| script-environment-image | Multi-arch OCI image that includes Mock and other tooling required by Pipeline tasks. | Check the [main branch][mock-image] |
 | specfile            | Specfile name. Default is null and package-name.spec is used.                        | null                                |
 | monorepo-subdir      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                |
-
+| mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | "" |
 
 ## Parametrizing timeouts
 

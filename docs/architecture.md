@@ -23,10 +23,15 @@ Pipeline.
 graph TD
 
   clone_repository[clone-repository] --> get_sources[process-sources]
+  clone_repository[clone-repository] --> prepare_mock_config[prepare-mock-config]
 
   get_sources --> nosrpm_a[calculate-deps-x86_64]:::ARCH
   get_sources --> nosrpm_b[calculate-deps-aarch64]:::ARCH
   get_sources --> nosrpm_c[calculate-deps ...]:::ARCH
+
+  prepare_mock_config --> nosrpm_a
+  prepare_mock_config --> nosrpm_b
+  prepare_mock_config --> nosrpm_c
 
   nosrpm_a --> prefetch_a[Prefetch x86_64.
     Download BuildRequires.
@@ -75,6 +80,12 @@ using [MPC][].
     - Any additional code pre-processing must happen here, under *our control*
       (not user's), e.g., we expand rpmautospec `%autorelease` and
       `%autochangelog` templates here.
+- **prepare-mock-config**
+    - Given the input parameters and the source directory (some use cases allow
+      the Pipeline to read the Mock config file from cloned sources), generate a
+      Mock configuration template file.  The template is architecture-agnostic;
+      tasks that use this template need to instantiate it with their own
+      architecture string (e.g., `s/@ARCH@/x86_64/`).
 - **calculate-deps-&lt;ARCH&gt; (Mock)**
     - This step **is not** [hermetic][].  However, it is necessary in order to
       build hermetically in the subsequent **rpmbuild-&lt;ARCH&gt;** step.
