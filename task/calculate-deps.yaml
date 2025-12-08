@@ -33,6 +33,9 @@ spec:
     - name: ociStorage
       description: The OCI repository where the Trusted Artifacts are stored.
       type: string
+    - name: ociArtifactExpiresAfter
+      description: How long Trusted Artifacts should be retained
+      type: string
     - name: specfile
       description: |
         Name of specfile when specfile doesn't have the same prefix name as package name.
@@ -173,6 +176,9 @@ spec:
         - --store
         - $(params.ociStorage)
         - $(results.calculation-artifact.path)=/var/workdir/results
+      env:
+        - name: IMAGE_EXPIRES_AFTER
+          value: $(params.ociArtifactExpiresAfter)
   volumes:
     - name: ssh
       secret:
