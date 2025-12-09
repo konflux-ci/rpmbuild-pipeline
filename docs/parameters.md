@@ -15,7 +15,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | specfile            | Specfile name. Default is null and package-name.spec is used.                        | null                                |
 | monorepo-subdir      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                |
 | mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | "" |
-| ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | ""                                  |
+| ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
 
 ## Parametrizing timeouts
 
@@ -34,7 +34,6 @@ by the pipeline's CI.
 | self-ref-url            | process-sources, rpmbuild, upload-sbom |
 | self-ref-revision       | process-sources, rpmbuild, upload-sbom |
 | test-suffix             | import-to-quay |
-| ociArtifactExpiresAfter | clone-repository, process-sources, calculate-deps, rpmbuild|
 
 
 ## Leftover parameters

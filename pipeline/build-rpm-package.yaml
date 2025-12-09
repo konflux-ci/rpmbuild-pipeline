@@ -112,7 +112,7 @@ spec:
     - description: How long Trusted Artifacts should be retained
       type: string
       name: ociArtifactExpiresAfter
-      default: ""
+      default: 14d
     # This part is commented out because the parameter is not usable.  We don't
     # seem to be able to pass the given parameter down to override
     # `spec.tasks.{taskname}.timeout` defaults.  That's why we hardcode (for
