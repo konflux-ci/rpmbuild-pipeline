@@ -261,6 +261,8 @@ spec:
           value: $(params.monorepo-subdir)
         - name: build-architectures
           value: ["$(params.build-architectures[*])"]
+        - name: build-platforms
+          value: ["$(params.build-platforms[*])"]
     - name: prepare-mock-config
       retries: 3
       taskRef:
@@ -287,8 +289,6 @@ spec:
           value: fedora-rawhide-@ARCH@
         - name: ociArtifactExpiresAfter
           value: $(params.ociArtifactExpiresAfter)
-        - name: build-platforms
-          value: ["$(params.build-platforms[*])"]
     - name: calculate-deps-x86-64
       runAfter:
         - process-sources
