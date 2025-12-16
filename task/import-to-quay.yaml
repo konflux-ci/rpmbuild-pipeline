@@ -151,11 +151,14 @@ spec:
         done
 
         echo "Decompressing found archives"
-        for tarball in *.tar* *.tg* ; do
-          tar -vxf "$tarball"
-        done
+        ( # limit the scope of nullglob
+          shopt -s nullglob
+          for tarball in *.tar* *.tg* ; do
+            tar -vxf "$tarball"
+          done
+        )
         #unzip ./*.zip &>/dev/null # missing in mock image
-        true
+        true archive explosion finished
     - name: run-syft
       image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
       workingDir: /var/workdir/results/oras-staging
