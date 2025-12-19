@@ -118,6 +118,12 @@ spec:
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           rpmautospec process-distgit "$specfile_name" "$specfile_name"
+
+          # Generate the patch-git-generated-log.txt and
+          # patch-git-generated-commit.txt files.  These are harmless,
+          # metadata-only files; although currently only the Glibc build uses
+          # them, we generate them by default.
+          patch-git-prepare.sh
         else
           echo "'rpmautospec process-distgit' is not supported for monorepos"
         fi
