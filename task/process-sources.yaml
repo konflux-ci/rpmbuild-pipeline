@@ -43,6 +43,13 @@ spec:
       name: build-platforms
       type: array
       default: []
+    - description: |
+        Base URL of the dist-git repository from which to fetch lookaside cache sources.
+        The package name will be appended to construct the full URL for
+        'dist-git-client --forked-from'.
+      name: lookaside-cache-url
+      type: string
+      default: https://src.fedoraproject.org/rpms/
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
@@ -114,7 +121,10 @@ spec:
           specfile_name="${specfile_prefix}.spec"
         fi
 
-        dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        # Normalize URL to ensure proper path separator
+        lookaside_url="$(params.lookaside-cache-url)"
+        lookaside_url="${lookaside_url%/}"  # Remove trailing slash if present
+        dist-git-client --forked-from "${lookaside_url}/$(params.package-name)" sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           rpmautospec process-distgit "$specfile_name" "$specfile_name"
