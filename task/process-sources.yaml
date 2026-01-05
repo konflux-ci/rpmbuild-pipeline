@@ -122,7 +122,11 @@ spec:
           specfile_name="${specfile_prefix}.spec"
         fi
 
-        dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        # Configure curl's header until https://github.com/release-engineering/dist-git/issues/88 is fixed
+        CURL_HOME=$(mktemp -d)
+        echo 'header = "Accept-Encoding: identity"' > $CURL_HOME/.curlrc
+
+        CURL_HOME="$CURL_HOME" dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           rpmautospec process-distgit "$specfile_name" "$specfile_name"
