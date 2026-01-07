@@ -17,6 +17,8 @@ Below is the set of supported parameters accepted by the pipeline.
 | monorepo-subdir      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                |
 | mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | "" |
 | ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
+| forked-from             | URL prefix of the upstream dist-git repository for lookaside cache resolution. The package name will be appended to this prefix. | `https://src.fedoraproject.org/rpms/` |
+| dist-git-client-configdir | Path to the directory containing the dist-git-client configuration. Passed to dist-git-client via `--configdir` option. | "" |
 
 ## Parametrizing timeouts
 
