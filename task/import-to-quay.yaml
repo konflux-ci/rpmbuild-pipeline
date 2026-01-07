@@ -134,7 +134,8 @@ spec:
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/usr/bin/env bash
-        set +x
+        set +ex
+        set -o pipefail
         # expects to parse all srpm files in /mnt
         # writes output to /mnt/syft-sbom.json
         SRCDIR=$(pwd)
@@ -144,18 +145,22 @@ spec:
         cd $TMPDIR || exit 1
         for rpm in $SRCDIR/*.src.rpm ; do
           echo "Extracting srpm $rpm"
-          rpm_fn=$(basename "$rpm")
-          cp "$rpm" .
-          rpm2archive -n "$rpm_fn" | tar -x
-          rm "$rpm_fn"
+          rpm2archive -n "$rpm" | tar -x
         done
 
         echo "Decompressing found archives"
-        for tarball in *.tar* *.tg* ; do
-          tar -vxf "$tarball"
-        done
+        ( # limit the scope of nullglob
+          shopt -s nullglob
+          for tarball in *.tar* *.tg* ; do
+            if tar -tf "$tarball" &>/dev/null ; then
+              echo "Processing tar file: $tarball"
+              tar -xf "$tarball"
+            else
+              echo "Skipping non-archive file: $tarball"
+            fi
+          done
+        )
         #unzip ./*.zip &>/dev/null # missing in mock image
-        true
     - name: run-syft
       image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
       workingDir: /var/workdir/results/oras-staging
