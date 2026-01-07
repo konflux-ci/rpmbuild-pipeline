@@ -574,7 +574,7 @@ spec:
     - name: upload-to-quay
       params:
         - name: ociStorage
-          value: $(params.ociStorage)
+          value: $(params.ociStorage).built-artifacts
         - name: git-url
           value: $(params.git-url)
         - name: revision

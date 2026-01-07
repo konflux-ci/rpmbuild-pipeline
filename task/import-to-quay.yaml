@@ -111,7 +111,8 @@ spec:
 
         # Get NVR from any SRPM
         NVR=$(<nvr.log)
-        IMAGE_URL="$(params.ociStorage).nvr-$NVR"
+
+        IMAGE_URL="$(params.ociStorage)"
 
         echo "Selecting auth for $IMAGE_URL"
         select-oci-auth $IMAGE_URL > $HOME/auth.json
