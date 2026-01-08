@@ -134,6 +134,13 @@ spec:
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/usr/bin/env bash
+
+        # TODO(praiskup): RPM build code shouldn't be responsible for code
+        # scanning.  This heuristic for "best effort" archive extraction is
+        # incomplete and brittle (hence very risky), and should ideally be part
+        # of the Syft tooling (which likely performs all kinds of other
+        # heuristics, in a legitimate way).
+
         set +x
         # expects to parse all srpm files in /mnt
         # writes output to /mnt/syft-sbom.json
@@ -154,6 +161,9 @@ spec:
         ( # limit the scope of nullglob
           shopt -s nullglob
           for tarball in *.tar* *.tg* ; do
+            case $tarball in
+              *sig|*asc) continue ;;
+            esac
             tar -vxf "$tarball"
           done
         )
