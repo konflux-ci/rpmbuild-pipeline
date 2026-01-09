@@ -141,7 +141,7 @@ spec:
         # of the Syft tooling (which likely performs all kinds of other
         # heuristics, in a legitimate way).
 
-        set +x
+        set -x
         # expects to parse all srpm files in /mnt
         # writes output to /mnt/syft-sbom.json
         SRCDIR=$(pwd)
