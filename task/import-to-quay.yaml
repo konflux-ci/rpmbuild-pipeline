@@ -193,10 +193,10 @@ spec:
         #!/usr/bin/env bash
         set -e
 
-        if [ -f /pulp-access/oauth-cli.toml ]; then
+        if [ -f /pulp-access/cli.toml ]; then
           cd /pulp-access
           /usr/bin/pulp-upload.py \
-            --config oauth-cli.toml \
+            --config cli.toml \
             --repository_name "$(params.package-name)" \
             --rpm_path "/var/workdir/results" \
             --sbom_path "/var/workdir/results/oras-staging/sbom-merged.json" \
