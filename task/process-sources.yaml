@@ -149,9 +149,9 @@ spec:
         cd "${working_dir}"
 
         if $(params.hermetic); then
-          python3 /usr/local/bin/select_architectures.py "$@" --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+          select-architectures "$@" --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         else
-          python3 /usr/local/bin/select_architectures.py "$@" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+          select-architectures "$@" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         fi
     - name: create-trusted-artifact
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d

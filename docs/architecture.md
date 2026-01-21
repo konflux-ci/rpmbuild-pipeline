@@ -49,7 +49,7 @@ graph TD
   build_b --> Upload
   build_c --> Upload
 
-  Upload --> check_noarch[check-noarch]
+  Upload --> check-noarch[check-noarch]
 
   classDef ARCH fill:yellow
 ```
