@@ -142,6 +142,10 @@ spec:
       default: 'false'
       description: Enable cache proxy configuration
       type: string
+    - name: build-target
+      default: 'fedora-rawhide'
+      description: Set build target
+      type: string
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -263,6 +267,8 @@ spec:
           value: ["$(params.build-architectures[*])"]
         - name: build-platforms
           value: ["$(params.build-platforms[*])"]
+        - name: build-target
+          value: $(params.build-target)
     - name: prepare-mock-config
       retries: 3
       taskRef:
