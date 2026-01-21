@@ -94,7 +94,7 @@ spec:
         #!/usr/bin/env bash
         set -e
         cd /var/workdir/results
-        /usr/bin/gather-rpms.py \
+        gather-rpms \
             --source-url git+$(params.git-url)#$(params.revision) \
             --start-time $(params.start-time) \
             --end-time `date "+%s"` \
@@ -180,7 +180,7 @@ spec:
       script: |
         #!/bin/bash
         set -x
-        python3 /usr/local/bin/merge_syft_sbom.py --sbom-spdx sbom-spdx.json --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json
+        merge-syft-sbom --sbom-spdx sbom-spdx.json --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json
     - name: show-sbom
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
       workingDir: /var/workdir/results/oras-staging

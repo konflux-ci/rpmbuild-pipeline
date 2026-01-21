@@ -54,7 +54,7 @@ spec:
       script: |
         #!/bin/bash
         set -x
-        python3 /usr/local/bin/check_noarch.py --results-dir /var/workdir/results
+        check-noarch --results-dir /var/workdir/results
   volumes:
     - name: workdir
       emptyDir: {}
