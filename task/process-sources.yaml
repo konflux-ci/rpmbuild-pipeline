@@ -43,6 +43,19 @@ spec:
       name: build-platforms
       type: array
       default: []
+    - description: |
+        URL prefix of the upstream dist-git repository for lookaside cache resolution.
+        The package name will be appended to this prefix.
+        If not specified, defaults to https://src.fedoraproject.org/rpms/.
+      name: forked-from
+      type: string
+      default: "https://src.fedoraproject.org/rpms/"
+    - description: |
+        Path to the directory containing the dist-git-client configuration.
+        Passed to dist-git-client via --configdir option.
+      name: dist-git-client-configdir
+      type: string
+      default: ""
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
@@ -105,7 +118,8 @@ spec:
       image: $(params.script-environment-image)
       script: |
         set -ex
-        cd "/var/workdir/source/${MONOREPO_SUBDIR}"
+        source_root="/var/workdir/source"
+        cd "${source_root}/${MONOREPO_SUBDIR}"
 
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
@@ -114,7 +128,18 @@ spec:
           specfile_name="${specfile_prefix}.spec"
         fi
 
-        dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        # Build dist-git-client arguments
+        dgc_args=""
+        if [ -n "$(params.dist-git-client-configdir)" ]; then
+          # Configdir is relative to source root, not current working directory
+          dgc_args="$dgc_args --configdir ${source_root}/$(params.dist-git-client-configdir)"
+        fi
+        # Ensure forked-from URL has trailing slash before appending package name
+        forked_from_url="$(params.forked-from)"
+        forked_from_url="${forked_from_url%/}/"
+        dgc_args="$dgc_args --forked-from ${forked_from_url}$(params.package-name)"
+
+        dist-git-client $dgc_args sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           rpmautospec process-distgit "$specfile_name" "$specfile_name"
@@ -128,7 +153,7 @@ spec:
           echo "'rpmautospec process-distgit' is not supported for monorepos"
         fi
 
-        cd "/var/workdir/source"
+        cd "${source_root}"
         git diff
 
         # We remove the .git repository here to ensure that historical code does

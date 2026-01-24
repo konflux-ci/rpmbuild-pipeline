@@ -142,6 +142,19 @@ spec:
       default: 'false'
       description: Enable cache proxy configuration
       type: string
+    - name: forked-from
+      description: |
+        URL prefix of the upstream dist-git repository for lookaside cache resolution.
+        The package name will be appended to this prefix.
+        If not specified, defaults to https://src.fedoraproject.org/rpms/.
+      type: string
+      default: "https://src.fedoraproject.org/rpms/"
+    - name: dist-git-client-configdir
+      description: |
+        Path to the directory containing the dist-git-client configuration.
+        Passed to dist-git-client via --configdir option.
+      type: string
+      default: ""
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -263,6 +276,10 @@ spec:
           value: ["$(params.build-architectures[*])"]
         - name: build-platforms
           value: ["$(params.build-platforms[*])"]
+        - name: forked-from
+          value: $(params.forked-from)
+        - name: dist-git-client-configdir
+          value: $(params.dist-git-client-configdir)
     - name: prepare-mock-config
       retries: 3
       taskRef:
