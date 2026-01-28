@@ -42,7 +42,11 @@ spec:
     - description: List of platform overrides (MPLs)
       name: build-platforms
       type: array
-      default: []
+      default:
+        - linux/arm64
+        - linux/ppc64le
+        - linux/s390x
+        - linux/amd64
     - description: Build target
       name: build-target
       type: string

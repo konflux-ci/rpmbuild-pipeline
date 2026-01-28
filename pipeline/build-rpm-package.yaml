@@ -82,7 +82,11 @@ spec:
     - name: build-platforms
       description: List of platform overrides (MPLs).
       type: array
-      default: []
+      default:
+        - linux/arm64
+        - linux/ppc64le
+        - linux/s390x
+        - linux/amd64
     - name: self-ref-url
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
