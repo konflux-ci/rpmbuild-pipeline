@@ -104,7 +104,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:48c67d25ba6d61074a6c38451668cd3377b277e9a64096d45d3caca37455418f
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:7f7314c54a2ac2b72da69515789fd3b2c91c1fbfae4710607b91e4f52c52ae00
       type: string
     - name: ociStorage
       description: |
@@ -146,9 +146,9 @@ spec:
       default: 'false'
       description: Enable cache proxy configuration
       type: string
-    - name: build-target
+    - name: target-distribution
       default: 'fedora-rawhide'
-      description: Set build target
+      description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
       type: string
   results:
     - description: ""
@@ -271,8 +271,8 @@ spec:
           value: ["$(params.build-architectures[*])"]
         - name: build-platforms
           value: ["$(params.build-platforms[*])"]
-        - name: build-target
-          value: $(params.build-target)
+        - name: target-distribution
+          value: $(params.target-distribution)
     - name: prepare-mock-config
       retries: 3
       taskRef:

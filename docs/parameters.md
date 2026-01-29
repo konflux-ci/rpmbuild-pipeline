@@ -14,9 +14,10 @@ Below is the set of supported parameters accepted by the pipeline.
 | hermetic            | Perform the RPM build in a hermetic (offline) environment.                           | true                                |
 | script-environment-image | Multi-arch OCI image that includes Mock and other tooling required by Pipeline tasks. | Check the [main branch][mock-image] |
 | specfile            | Specfile name. Default is null and package-name.spec is used.                        | null                                |
-| monorepo-subdir      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                |
-| mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | "" |
+| monorepo-subdir      | Path to the RPM .spec file within the source tree. Relative to repo root. If a directory is provided, the `specfile` will be resolved within it. | "."                                 |
+| mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | ""                                  |
 | ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
+| target-distribution | Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11 | fedora-rawhide                      |
 
 ## Parametrizing timeouts
 

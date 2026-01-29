@@ -47,8 +47,8 @@ spec:
         - linux/ppc64le
         - linux/s390x
         - linux/amd64
-    - description: Build target
-      name: build-target
+    - description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
+      name: target-distribution
       type: string
       default: 'fedora-rawhide'
   results:
@@ -157,9 +157,9 @@ spec:
         cd "${working_dir}"
 
         if $(params.hermetic); then
-          python3 /usr/local/bin/select_architectures.py "$@" --target $(params.build-target) --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "$(params.target-distribution)" --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         else
-          python3 /usr/local/bin/select_architectures.py "$@" --target $(params.build-target) --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "$(params.target-distribution)" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         fi
     - name: create-trusted-artifact
       image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
