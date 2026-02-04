@@ -94,7 +94,7 @@ spec:
         #!/usr/bin/env bash
         set -e
         cd /var/workdir/results
-        /usr/bin/gather-rpms.py \
+        /usr/local/bin/gather_rpms.py \
             --source-url git+$(params.git-url)#$(params.revision) \
             --start-time $(params.start-time) \
             --end-time `date "+%s"` \
