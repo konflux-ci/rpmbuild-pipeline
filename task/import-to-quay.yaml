@@ -49,6 +49,9 @@ spec:
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
+    - description: Image to use for running syft
+      name: syft-image
+      type: string
   results:
     - name: IMAGE_URL
       description: Location of build artifact
@@ -171,7 +174,7 @@ spec:
         #unzip ./*.zip &>/dev/null # missing in mock image
         true archive explosion finished
     - name: run-syft
-      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
+      image: $(params.syft-image)
       workingDir: /var/workdir/results/oras-staging
       script: |
         syft ./syft-extracted -o spdx-json > syft-sbom.json

@@ -18,6 +18,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | ""                                  |
 | ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
 | target-distribution | Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11 | fedora-rawhide                      |
+| syft-image | Image to use for running syft | See [default value in pipeline definition][syft-image-def] |
 
 ## Parametrizing timeouts
 
@@ -52,3 +53,4 @@ removal in the future.
 
 [PipelineRun timeout]: https://tekton.dev/docs/pipelines/pipelineruns/#configuring-a-failure-timeout
 [mock-image]: https://github.com/konflux-ci/rpmbuild-pipeline-environment-container
+[syft-image-def]: ../pipeline/build-rpm-package.yaml#L156

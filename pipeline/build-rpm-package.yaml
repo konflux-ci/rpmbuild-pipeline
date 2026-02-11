@@ -150,6 +150,10 @@ spec:
       default: 'fedora-rawhide'
       description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
       type: string
+    - name: syft-image
+      description: Image to use for running syft
+      type: string
+      default: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -595,6 +599,8 @@ spec:
           value: $(tasks.rpmbuild-ppc64le.results.rpmbuild-artifact)
         - name: script-environment-image
           value: $(params.script-environment-image)
+        - name: syft-image
+          value: $(params.syft-image)
       runAfter:
         - rpmbuild-s390x
         - rpmbuild-x86-64
