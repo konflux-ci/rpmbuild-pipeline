@@ -156,6 +156,7 @@ spec:
         - "$(params.build-platforms[*])"
       script: |
         #!/bin/bash
+        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         working_dir="/var/workdir/source/${MONOREPO_SUBDIR}"
         cd "${working_dir}"
