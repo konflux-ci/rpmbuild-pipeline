@@ -169,7 +169,7 @@ spec:
           remote_cmd podman run --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
                                 "${podman_params[@]}" \
-              mock --hermetic-build \
+              mock --config-opts=dnf_common_opts=--setopt=optional_metadata_types=filelists --config-opts=dnf_common_opts= --hermetic-build \
                   /buildroot/results/buildroot_lock.json \
                   /buildroot/results/buildroot_repo \
                   --spec /source/$specfile_name \
