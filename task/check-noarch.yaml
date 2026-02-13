@@ -53,6 +53,7 @@ spec:
       image: $(params.script-environment-image)
       script: |
         #!/bin/bash
+        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         python3 /usr/local/bin/check_noarch.py --results-dir /var/workdir/results
   volumes:

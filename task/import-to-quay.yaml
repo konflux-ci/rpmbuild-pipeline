@@ -142,6 +142,7 @@ spec:
         # of the Syft tooling (which likely performs all kinds of other
         # heuristics, in a legitimate way).
 
+        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         # expects to parse all srpm files in /mnt
         # writes output to /mnt/syft-sbom.json
@@ -180,6 +181,7 @@ spec:
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/bin/bash
+        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         python3 /usr/local/bin/merge_syft_sbom.py --sbom-spdx sbom-spdx.json --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json
     - name: show-sbom
