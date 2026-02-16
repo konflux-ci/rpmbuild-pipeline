@@ -53,8 +53,70 @@ spec:
       image: $(params.script-environment-image)
       script: |
         #!/bin/bash
-        set -x
-        python3 /usr/local/bin/check_noarch.py --results-dir /var/workdir/results
+        #
+        # Compare .noarch.rpm files that have the same name in different subdirectories.
+        # Usage: compare-noarch-rpms.sh <directory>
+        #
+        set -e
+
+        ROOT_DIR="/var/workdir/results"
+        if [[ ! -d "$ROOT_DIR" ]]; then
+            echo "'$ROOT_DIR' is not a directory." >&2
+            exit 1
+        fi
+
+        # Collect all .noarch.rpm files and group by basename
+        declare -A by_name
+        while IFS="" read -r -d '' path; do
+            name=$(basename "$path")
+            if [[ -z "${by_name[$name]}" ]]; then
+                by_name[$name]="$path"
+            else
+                by_name[$name]="${by_name[$name]}|$path"
+            fi
+        done < <(find "$ROOT_DIR" -type f -name "*.noarch.rpm" -print0 2>/dev/null)
+
+        if [[ ${#by_name[@]} -eq 0 ]]; then
+            echo "No .noarch.rpm files found under '$ROOT_DIR'."
+            exit 0
+        fi
+
+        # For each basename that appears in more than one path, compare the files
+        compared=0
+        error=false
+        for name in "${!by_name[@]}"; do
+            IFS='|' read -ra paths <<< "${by_name[$name]}"
+            if [[ ${#paths[@]} -lt 2 ]]; then
+                continue
+            fi
+            echo "--- Comparing '$name' (${#paths[@]} copies) ---"
+            all_same=true
+            first="${paths[0]}"
+            for path in "${paths[@]:1}"; do
+                if ! rpmdiff -i S 5 T N -- "$first" "$path" ; then
+                    echo "  DIFFER: $first"
+                    echo "      vs: $path"
+                    all_same=false
+                    error=true
+                fi
+            done
+            if $all_same; then
+                echo "  All ${#paths[@]} files are identical."
+            fi
+            echo ""
+            ((compared++)) || true
+        done
+
+        if [[ $compared -eq 0 ]]; then
+            echo "No duplicate .noarch.rpm filenames found (each name appears only once)."
+        else
+            echo "Compared $compared filename(s) that had multiple copies."
+        fi
+
+        # If at least one comparison failed, return error
+        if $error ; then
+            exit 1
+        fi
   volumes:
     - name: workdir
       emptyDir: {}
