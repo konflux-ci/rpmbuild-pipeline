@@ -145,8 +145,9 @@ spec:
                 --calculate-build-dependencies \
         || success=false
 
-        # display dnf logs (no matter the mock exit status), and propagate the
-        # mock failure (terminates the whole script)
+        # Display DNF logs regardless of the Mock exit status, then propagate
+        # any Mock failure to terminate the script (sync with
+        # rpmbuild.yaml).
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 

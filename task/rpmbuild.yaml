@@ -187,9 +187,13 @@ spec:
           || success=false
         fi
 
-        # display dnf logs (no matter the mock exit status), and propagate the
-        # mock failure (terminates the whole script)
-        remote_cmd tar xfO $HOMEDIR/results/chroot_scan.tar.gz
+        # Display DNF logs regardless of the Mock exit status, then propagate
+        # any Mock failure to terminate the script.  Preserving the DNF logs in
+        # the output allows for troubleshooting intermittent DNF errors (e.g.,
+        # those with mirrored repos):
+        # https://github.com/rpm-software-management/dnf5/issues/1673
+        # (sync with calculate-deps.yaml)
+        remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
         resultdir="$workdir/results/$arch"
