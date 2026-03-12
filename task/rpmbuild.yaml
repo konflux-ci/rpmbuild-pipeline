@@ -16,8 +16,11 @@ spec:
     - description: Package name being built
       name: package-name
       type: string
-    - description: The platform/architecture we build for
+    - description: The platform/architecture we build on
       name: PLATFORM
+      type: string
+    - description: The architecture we build for
+      name: arch
       type: string
     - description: The branch name we build against/from
       name: target-branch
@@ -96,13 +99,6 @@ spec:
           cp /ssh/id_rsa ~/.ssh
         fi
 
-        arch=x86_64
-        case $(params.PLATFORM) in
-          *s390x) arch=s390x ;;
-          *ppc64le) arch=ppc64le ;;
-          *arm64) arch=aarch64 ;;
-        esac
-
         chmod 0400 ~/.ssh/id_rsa
         export SSH_HOST=$(cat /ssh/host)
         export HOMEDIR=$(cat /ssh/user-dir)
@@ -164,7 +160,7 @@ spec:
           # Give mockbuilder rights to consume buildroot.
           remote_cmd mkdir "$HOMEDIR/buildroot"
           remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/buildroot"
-          send "$workdir/results/$arch/results" "$HOMEDIR/buildroot"
+          send "$workdir/results/$(params.arch)/results" "$HOMEDIR/buildroot"
 
           remote_cmd podman run --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
@@ -176,8 +172,13 @@ spec:
                   --sources /source --resultdir /results \
           || success=false
         else
+          if [ $(params.arch) == "i686" ] ; then
+            mock_arch=i386
+          else
+            mock_arch=$(params.arch)
+          fi
           # Instantiate the given Mock config template for our architecture.
-          sed "s|@ARCH@|$arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
+          sed "s|@ARCH@|$mock_arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
           send "$workdir/mock.cfg" "$HOMEDIR/mock.cfg"
           remote_cmd podman run -v "$HOMEDIR/mock.cfg:/mock.cfg" \
                                 "${podman_params[@]}" \
@@ -196,7 +197,7 @@ spec:
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
-        resultdir="$workdir/results/$arch"
+        resultdir="$workdir/results/$(params.arch)"
         mkdir -p "$resultdir"
         receive "$HOMEDIR/results/" "$resultdir"
 
