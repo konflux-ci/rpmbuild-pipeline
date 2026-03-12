@@ -34,6 +34,9 @@ spec:
       description: PipelineRun ID (namespace/name)
       default: ""
       type: string
+    - description: The Trusted Artifact URI pointing to the i686 build output
+      name: i686-artifact
+      type: string
     - description: The Trusted Artifact URI pointing to the x86_64 build output
       name: x86_64-artifact
       type: string
@@ -88,6 +91,11 @@ spec:
       args:
         - use
         - $(params.ppc64le-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-i686
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.i686-artifact)=/var/workdir/results
     - name: gather-rpms
       image: $(params.script-environment-image)
       script: |
