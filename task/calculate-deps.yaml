@@ -157,11 +157,24 @@ spec:
             --lockfile /results/buildroot_lock.json \
             --output-repo /results/buildroot_repo
 
+        # Generate ancestors data for SBOM using the expanded specfile
+        # produced by the expand_spec mock plugin.
+        remote_cmd podman run -u mockbuilder \
+                              -v "$HOMEDIR/source:/source" \
+                              -v "$HOMEDIR/results:/results" \
+                              --privileged --rm -ti "$mock_img" \
+            gen_ancestors_from_src.py \
+                -s /source \
+                --specfile /results/expanded-spec.txt \
+                --forked-from "https://src.fedoraproject.org/rpms/$(params.package-name)" \
+                -o /results/ancestors.json
+
         resultdir=$workdir/results/$arch/results
         mkdir -p "$resultdir"
         # Send only repo and lockfile, ignore other artifacts
         receive "$HOMEDIR/results/buildroot_lock.json" "$resultdir/buildroot_lock.json"
         receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
+        receive "$HOMEDIR/results/ancestors.json" "$resultdir/ancestors.json"
         cat "$resultdir/buildroot_lock.json"
       volumeMounts:
         - mountPath: /ssh
