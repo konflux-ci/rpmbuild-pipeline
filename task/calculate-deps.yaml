@@ -176,6 +176,7 @@ spec:
         receive "$HOMEDIR/results/buildroot_repo" "$resultdir"
         receive "$HOMEDIR/results/ancestors.json" "$resultdir/ancestors.json"
         cat "$resultdir/buildroot_lock.json"
+        cat "$resultdir/ancestors.json"
       volumeMounts:
         - mountPath: /ssh
           name: ssh
