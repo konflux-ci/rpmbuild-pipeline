@@ -183,7 +183,7 @@ spec:
         #!/bin/bash
         export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
-        ARGS=(--sbom-spdx sbom-spdx.json --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json)
+        ARGS=(--rpm-dir . --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json)
         if [ -f ancestors.json ]; then
           ARGS+=(--source-data ancestors.json)
         else
