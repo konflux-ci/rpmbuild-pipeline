@@ -102,7 +102,7 @@ spec:
         echo "Gathered `ls oras-staging | wc -l` files for upload"
 
     - name: push-to-quay-select-auth
-      image: quay.io/konflux-ci/oras:latest@sha256:d126f98e16bfad71aab782eb212a5be701e2cde915d294a7bd6423a4ab448705
+      image: quay.io/konflux-ci/oras:latest@sha256:6a46c5960cbcb81d9f6b0206163102d6f2e9e649ec231136f9ee33c02d3c1ad0
       script: |
         #!/usr/bin/env bash
         set -e
