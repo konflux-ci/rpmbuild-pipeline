@@ -199,6 +199,28 @@ spec:
         resultdir="$workdir/results/$arch"
         mkdir -p "$resultdir"
         receive "$HOMEDIR/results/" "$resultdir"
+
+        # For non-hermetic builds, ancestors.json may not exist from
+        # calculate-deps.  Generate it here using the expanded specfile
+        # produced by the expand_spec mock plugin.
+        if [ -f "$resultdir/results/ancestors.json" ]; then
+          echo "ancestors.json already exists, skipping generation"
+        elif [ ! -f "$resultdir/expanded-spec.txt" ]; then
+          echo "WARNING: expanded-spec.txt not found in results, cannot generate ancestors.json" >&2
+        else
+          remote_cmd podman run -u mockbuilder \
+                                -v "$HOMEDIR/source:/source" \
+                                -v "$HOMEDIR/results:/results" \
+                                --privileged --rm -ti "$mock_img" \
+              gen_ancestors_from_src.py \
+                  -s /source \
+                  --specfile /results/expanded-spec.txt \
+                  --forked-from "https://src.fedoraproject.org/rpms/$(params.package-name)" \
+                  -o /results/ancestors.json
+          mkdir -p "$resultdir/results"
+          receive "$HOMEDIR/results/ancestors.json" "$resultdir/results/ancestors.json"
+          cat "$resultdir/results/ancestors.json"
+        fi
       volumeMounts:
         - mountPath: /ssh
           name: ssh
