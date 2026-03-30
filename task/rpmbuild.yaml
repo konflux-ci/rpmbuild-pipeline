@@ -227,6 +227,64 @@ spec:
         - mountPath: /ssh
           name: ssh
           readOnly: true
+    - name: extract-rpms
+      image: $(params.script-environment-image)
+      workingDir: /var/workdir
+      script: |
+        #!/usr/bin/env bash
+
+        if test "$(params.PLATFORM)" = localhost; then
+          exit 0
+        fi
+
+        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
+        set -x
+        shopt -s nullglob
+        workdir=$(pwd)
+        mkdir -p rpm-extracted
+        for rpm in results/*/*.rpm ; do
+          [ -f "$rpm" ] || continue
+          echo "Extracting rpm $rpm"
+          rpm_fn=$(basename "$rpm")
+          rpm_nvra=${rpm_fn%*.rpm}
+          rpm_dir="rpm-extracted/$rpm_nvra"
+          mkdir -p "$rpm_dir"
+          cd "$rpm_dir"
+          cp "$workdir/$rpm" .
+          echo "Extracting rpm $rpm_fn to $rpm_dir"
+          rpm2archive -n "$rpm_fn" | tar -xv
+          rm "$rpm_fn"
+          if [[ $rpm_fn == *.src.rpm ]]; then
+            echo "Decompressing archives in srpm to $rpm_dir"
+            for tarball in *.tar* *.tg* ; do
+              case $tarball in
+                *sig|*asc) continue ;;
+              esac
+              tar -vxf "$tarball" && rm "$tarball"
+            done
+            echo "Decompressing done"
+          fi
+          cd "$workdir"
+        done
+
+        true archive explosion finished
+
+    - name: run-syft
+      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
+      workingDir: /var/workdir
+      script: |
+        #!/usr/bin/env bash
+        if test "$(params.PLATFORM)" = localhost; then
+          exit 0
+        fi
+
+        arch=$(ls results/)
+        for rpm_dir in rpm-extracted/*; do
+          [ -d "$rpm_dir" ] || continue
+          rpm_nvra=$(basename "$rpm_dir")
+          echo "Scanning $rpm_dir"
+          syft "$rpm_dir" -o spdx-json > "results/$arch/$rpm_nvra.sbom.json"
+        done
     - name: create-trusted-artifact
       image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
       args:
