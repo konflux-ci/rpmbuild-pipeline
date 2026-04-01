@@ -61,17 +61,17 @@ spec:
         name: workdir
   steps:
     - name: use-trusted-artifact-source
-      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
     - name: use-trusted-artifact-results
-      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
       args:
         - use
         - $(params.calculation-artifact)=/var/workdir/results
     - name: use-trusted-artifact-mock-config
-      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
       args:
         - use
         - $(params.mock-config-template-file)=/var/workdir/mock-config
@@ -226,7 +226,7 @@ spec:
           name: ssh
           readOnly: true
     - name: create-trusted-artifact
-      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
       args:
         - create
         - --store
