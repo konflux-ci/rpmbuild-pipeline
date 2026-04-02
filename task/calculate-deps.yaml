@@ -161,6 +161,7 @@ spec:
         # Generate ancestors data for SBOM using the expanded specfile
         # produced by the expand_spec mock plugin.
         remote_cmd podman run -u mockbuilder \
+                              --network=none \
                               -v "$HOMEDIR/source:/source" \
                               -v "$HOMEDIR/results:/results" \
                               --privileged --rm -ti "$mock_img" \

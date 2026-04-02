@@ -210,6 +210,7 @@ spec:
           echo "WARNING: expanded-spec.txt not found in results, cannot generate ancestors.json" >&2
         else
           remote_cmd podman run -u mockbuilder \
+                                --network=none \
                                 -v "$HOMEDIR/source:/source" \
                                 -v "$HOMEDIR/results:/results" \
                                 --privileged --rm -ti "$mock_img" \
