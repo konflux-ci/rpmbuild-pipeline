@@ -138,52 +138,6 @@ spec:
         grep "Digest:" /tmp/oras.log | awk '{print $2}' | tr -d '\n' > $(results.IMAGE_DIGEST.path)
         echo -n $IMAGE_URL > $(results.IMAGE_URL.path)
         echo -n $NVR > $(results.NVR.path)
-    - name: explode-srpm
-      image: $(params.script-environment-image)
-      workingDir: /var/workdir/results/oras-staging
-      script: |
-        #!/usr/bin/env bash
-
-        # TODO(praiskup): RPM build code shouldn't be responsible for code
-        # scanning.  This heuristic for "best effort" archive extraction is
-        # incomplete and brittle (hence very risky), and should ideally be part
-        # of the Syft tooling (which likely performs all kinds of other
-        # heuristics, in a legitimate way).
-
-        export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
-        set -x
-        # expects to parse all srpm files in /mnt
-        # writes output to /mnt/syft-sbom.json
-        SRCDIR=$(pwd)
-        TMPDIR=./syft-extracted
-        mkdir $TMPDIR
-
-        cd $TMPDIR || exit 1
-        for rpm in $SRCDIR/*.src.rpm ; do
-          echo "Extracting srpm $rpm"
-          rpm_fn=$(basename "$rpm")
-          cp "$rpm" .
-          rpm2archive -n "$rpm_fn" | tar -x
-          rm "$rpm_fn"
-        done
-
-        echo "Decompressing found archives"
-        ( # limit the scope of nullglob
-          shopt -s nullglob
-          for tarball in *.tar* *.tg* ; do
-            case $tarball in
-              *sig|*asc) continue ;;
-            esac
-            tar -vxf "$tarball"
-          done
-        )
-        #unzip ./*.zip &>/dev/null # missing in mock image
-        true archive explosion finished
-    - name: run-syft
-      image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
-      workingDir: /var/workdir/results/oras-staging
-      script: |
-        syft ./syft-extracted -o spdx-json > syft-sbom.json
     - name: merge-syft-sbom
       image: $(params.script-environment-image)
       workingDir: /var/workdir/results/oras-staging
@@ -193,11 +147,18 @@ spec:
         set -x
         # list dirs
         find . | sort
+        # Create empty SPDX doc as placeholder for --syft-sbom (to be removed later)
+        echo '{"spdxVersion":"SPDX-2.3","packages":[],"files":[],"relationships":[]}' > syft-sbom.json
         ARGS=(--rpm-dir . --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json)
         if [ -f ancestors.json ]; then
           ARGS+=(--source-data ancestors.json)
         else
           echo "WARNING: ancestors.json not found in oras-staging, skipping source artifacts in SBOM" >&2
+        fi
+        if [ -f buildroot_rpms.json ]; then
+          ARGS+=(--buildroot-arch-list buildroot_rpms.json)
+        else
+          echo "WARNING: buildroot_rpms.json not found in oras-staging, skipping buildroot data in SBOM" >&2
         fi
         merge_syft_sbom.py "${ARGS[@]}"
     - name: show-sbom
