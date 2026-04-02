@@ -160,7 +160,7 @@ spec:
         else
           echo "WARNING: buildroot_rpms.json not found in oras-staging, skipping buildroot data in SBOM" >&2
         fi
-        merge_syft_sbom.py "${ARGS[@]}"
+        merge_sboms.py "${ARGS[@]}"
     - name: show-sbom
       image: quay.io/konflux-ci/appstudio-utils:ab6b0b8e40e440158e7288c73aff1cf83a2cc8a9@sha256:24179f0efd06c65d16868c2d7eb82573cce8e43533de6cea14fec3b7446e0b14
       workingDir: /var/workdir/results/oras-staging
