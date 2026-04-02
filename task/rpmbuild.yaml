@@ -278,12 +278,11 @@ spec:
           exit 0
         fi
 
-        arch=$(ls results/)
         for rpm_dir in rpm-extracted/*; do
           [ -d "$rpm_dir" ] || continue
           rpm_nvra=$(basename "$rpm_dir")
           echo "Scanning $rpm_dir"
-          syft "$rpm_dir" -o spdx-json > "results/$arch/$rpm_nvra.sbom.json"
+          syft "$rpm_dir" -o spdx-json > "results/$(params.arch)/$rpm_nvra.sbom.json"
         done
     - name: create-trusted-artifact
       image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
