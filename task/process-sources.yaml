@@ -51,9 +51,28 @@ spec:
       name: target-distribution
       type: string
       default: 'fedora-rawhide'
+    - description: |
+        URL prefix of the upstream dist-git repository for lookaside cache resolution.
+        The package name will be appended to this prefix.
+        If not specified, defaults to https://src.fedoraproject.org/rpms/.
+      name: forked-from
+      type: string
+      default: "https://src.fedoraproject.org/rpms/"
+    - description: |
+        Path to the directory containing the dist-git-client configuration.
+        Passed to dist-git-client via --configdir option.
+      name: dist-git-client-configdir
+      type: string
+      default: ""
   results:
     - name: dependencies-artifact
       description: The Trusted Artifact URI pointing to the artifact with the rpm deps and source.
+      type: string
+    - name: LOOKASIDE_CONFIG
+      description: |
+        JSON object containing the lookaside cache configuration used to download sources.
+        Contains lookaside_location, uri_pattern, and package name. Consumers can use this
+        with the sources file to reconstruct full download URLs for attestation verification.
       type: string
     - name: skip-mpc-tasks
       description: |
@@ -113,7 +132,8 @@ spec:
       image: $(params.script-environment-image)
       script: |
         set -ex
-        cd "/var/workdir/source/${MONOREPO_SUBDIR}"
+        source_root="/var/workdir/source"
+        cd "${source_root}/${MONOREPO_SUBDIR}"
 
         if test "$(params.specfile)" != "null" ; then
           specfile_name=$(params.specfile)
@@ -126,7 +146,52 @@ spec:
         CURL_HOME=$(mktemp -d)
         echo 'header = "Accept-Encoding: identity"' > $CURL_HOME/.curlrc
 
-        CURL_HOME="$CURL_HOME" dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        # Build dist-git-client arguments
+        dgc_args=""
+        if [ -n "$(params.dist-git-client-configdir)" ]; then
+          # Configdir is relative to source root, not current working directory
+          dgc_args="$dgc_args --configdir ${source_root}/$(params.dist-git-client-configdir)"
+        fi
+        # Ensure forked-from URL has trailing slash before appending package name
+        forked_from_url="$(params.forked-from)"
+        forked_from_url="${forked_from_url%/}/"
+        dgc_args="$dgc_args --forked-from ${forked_from_url}$(params.package-name)"
+
+        CURL_HOME="$CURL_HOME" dist-git-client $dgc_args sources
+
+        # Determine lookaside config and write to result for attestation
+        if [ -n "$(params.dist-git-client-configdir)" ]; then
+          config_dir="${source_root}/$(params.dist-git-client-configdir)"
+        else
+          config_dir="/etc/dist-git-client"
+        fi
+
+        # Parse hostname from forked-from URL
+        hostname=$(echo "${forked_from_url}" | sed -E 's|^https?://([^/]+).*|\1|')
+
+        lookaside_location=""
+        uri_pattern=""
+
+        # Search config files for matching clone_hostnames
+        for ini in "$config_dir"/*.ini; do
+          [ -f "$ini" ] || continue
+          if grep -q "clone_hostnames.*$hostname" "$ini"; then
+            lookaside_location=$(grep "^lookaside_location" "$ini" | cut -d= -f2- | tr -d ' ')
+            uri_pattern=$(grep "^lookaside_uri_pattern" "$ini" | cut -d= -f2- | tr -d ' ')
+            break
+          fi
+        done
+
+        # Fedora defaults if not found
+        if [ -z "$lookaside_location" ]; then
+          lookaside_location="https://src.fedoraproject.org"
+          uri_pattern="repo/pkgs/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
+        fi
+
+        # Output JSON
+        echo -n "{\"package\":\"$(params.package-name)\",\"lookaside_location\":\"$lookaside_location\",\"uri_pattern\":\"$uri_pattern\"}" \
+          > "$(results.LOOKASIDE_CONFIG.path)"
+
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           rpmautospec process-distgit "$specfile_name" "$specfile_name"
@@ -140,7 +205,7 @@ spec:
           echo "'rpmautospec process-distgit' is not supported for monorepos"
         fi
 
-        cd "/var/workdir/source"
+        cd "${source_root}"
         git diff
 
         # We remove the .git repository here to ensure that historical code does
