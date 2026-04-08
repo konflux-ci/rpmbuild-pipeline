@@ -43,6 +43,9 @@ spec:
     - description: The Trusted Artifact URI pointing to the aarch64 build output
       name: aarch64-artifact
       type: string
+    - description: The Trusted Artifact URI pointing to the s390 build output
+      name: s390-artifact
+      type: string
     - description: The Trusted Artifact URI pointing to the s390x build output
       name: s390x-artifact
       type: string
@@ -86,6 +89,11 @@ spec:
       args:
         - use
         - $(params.aarch64-artifact)=/var/workdir/results
+    - name: use-trusted-artifact-s390
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
+      args:
+        - use
+        - $(params.s390-artifact)=/var/workdir/results
     - name: use-trusted-artifact-s390x
       image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
       args:
