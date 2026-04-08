@@ -80,6 +80,8 @@ spec:
           type: string
         deps-x86_64:
           type: string
+        deps-s390:
+          type: string
         deps-s390x:
           type: string
         deps-aarch64:
@@ -89,6 +91,8 @@ spec:
         build-ppc64le:
           type: string
         build-x86_64:
+          type: string
+        build-s390:
           type: string
         build-s390x:
           type: string

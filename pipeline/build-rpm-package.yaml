@@ -591,6 +591,78 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/rpmbuild.yaml
+    - name: calculate-deps-s390
+      runAfter:
+        - process-sources
+        - prepare-mock-config
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-s390)
+        - name: arch
+          value: s390
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).calculation-s390
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/calculate-deps.yaml
+    - name: rpmbuild-s390
+      runAfter:
+        - calculate-deps-s390
+      timeout: "72h"
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-s390)
+        - name: arch
+          value: s390
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: hermetic
+          value: $(params.hermetic)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: calculation-artifact
+          value: $(tasks.calculate-deps-s390.results.calculation-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmbuild-s390
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/rpmbuild.yaml
     - name: calculate-deps-ppc64le
       runAfter:
         - process-sources
@@ -683,6 +755,8 @@ spec:
           value: $(tasks.rpmbuild-i686.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: s390-artifact
+          value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
           value: $(tasks.rpmbuild-s390x.results.rpmbuild-artifact)
         - name: ppc64le-artifact
@@ -692,6 +766,7 @@ spec:
         - name: purl-rpm-namespace
           value: $(params.purl-rpm-namespace)
       runAfter:
+        - rpmbuild-s390
         - rpmbuild-s390x
         - rpmbuild-x86-64
         - rpmbuild-i686
@@ -708,6 +783,7 @@ spec:
             value: task/import-to-quay.yaml
     - name: check-noarch-rpms
       runAfter:
+        - rpmbuild-s390
         - rpmbuild-s390x
         - rpmbuild-x86-64
         - rpmbuild-i686
@@ -720,6 +796,8 @@ spec:
           value: $(tasks.rpmbuild-x86-64.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: s390-artifact
+          value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
           value: $(tasks.rpmbuild-s390x.results.rpmbuild-artifact)
         - name: ppc64le-artifact
