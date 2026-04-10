@@ -1,4 +1,4 @@
-# Tekton Pipeline for Building RPMs
+# Tekton Pipeline for Building RPMs 
 
 This is the **upstream flavor** of the Tekton RPM Build Pipeline, which allows
 you to easily build RPMs in [Konflux][].  You can either:
