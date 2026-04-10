@@ -109,6 +109,7 @@ spec:
         # Instantiate the given Mock config template for our architecture.
         sed "/yum\.conf/s|@ARCH@|$repo_arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
         sed -i "s|@ARCH@|$mock_arch|" "$workdir/mock.cfg"
+        cat "$workdir/mock.cfg"
         send "$workdir/mock.cfg" "$HOMEDIR/mock.cfg"
 
         # Allow mockbuilder (group mock) to read sources, and write results
