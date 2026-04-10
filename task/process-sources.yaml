@@ -105,7 +105,7 @@ spec:
         value: $(params.monorepo-subdir)
   steps:
     - name: use-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
       args:
         - use
         - $(params.source-artifact)=/var/workdir/source
@@ -167,7 +167,7 @@ spec:
           python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "$(params.target-distribution)" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         fi
     - name: create-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:0388f83b0a0f02e1b814f62e660a68c56f283fe3092371d00bf5ce743f53be2f
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
       args:
         - create
         - --store
