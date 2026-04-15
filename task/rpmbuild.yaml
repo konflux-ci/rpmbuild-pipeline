@@ -102,10 +102,10 @@ spec:
         chmod 0400 ~/.ssh/id_rsa
         export SSH_HOST=$(cat /ssh/host)
         export HOMEDIR=$(cat /ssh/user-dir)
-        export SSH_ARGS="-o StrictHostKeyChecking=no"
+        export SSH_ARGS="-o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10"
         remote_cmd() { ssh $SSH_ARGS "$SSH_HOST" "$@" ; }
-        send() { rsync -rva "$1" "$SSH_HOST:$2" ; }
-        receive() { rsync -rva "$SSH_HOST:$1" "$2" ; }
+        send() { rsync -e "ssh $SSH_ARGS" -rva "$1" "$SSH_HOST:$2" ; }
+        receive() { rsync -e "ssh $SSH_ARGS" -rva "$SSH_HOST:$1" "$2" ; }
 
         if [ "$SSH_HOST" == "localhost" ] ; then
           echo "Running at local host is not supported"
