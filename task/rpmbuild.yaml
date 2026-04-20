@@ -162,10 +162,17 @@ spec:
           remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/buildroot"
           send "$workdir/results/$(params.arch)/results" "$HOMEDIR/buildroot"
 
+          BRANCH=$(params.target-branch)
+          BRANCH=${BRANCH,,}
+          if [[ $BRANCH == rhel-6* ]] ; then
+            RHEL6_IGNORE_SBOM="--disable-plugin=expand_spec"
+          else
+            RHEL6_IGNORE_SBOM=""
+          fi
           remote_cmd podman run --network=none \
                                 -v "$HOMEDIR/buildroot:/buildroot" \
                                 "${podman_params[@]}" \
-              mock --hermetic-build \
+              mock $RHEL6_IGNORE_SBOM --hermetic-build \
                   /buildroot/results/buildroot_lock.json \
                   /buildroot/results/buildroot_repo \
                   --spec /source/$specfile_name \
