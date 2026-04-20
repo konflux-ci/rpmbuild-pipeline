@@ -256,11 +256,9 @@ spec:
           rm "$rpm_fn"
           if [[ $rpm_fn == *.src.rpm ]]; then
             echo "Decompressing archives in srpm to $rpm_dir"
-            for archive in *.tar* *.tg* *.tb* *.txz *.tlz *.tzst *.crate *.zip *.xpi *.oxt ; do
+            for archive in *tar *.tbz2 *.tar.gz *.tar.xz *.tar.bz2 *.tar.zst *.tar.lz *.tgz *.tbz *.txz *.tlz *.tzst *.crate *.zip *.xpi *.oxt *.gem ; do
               [ -f "$archive" ] || continue
               case $archive in
-                *sig|*asc)
-                  continue ;;
                 *.zip|*.xpi|*.oxt)
                   unzip -o "$archive" && rm "$archive" ;;
                 *)
