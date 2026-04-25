@@ -168,7 +168,7 @@ spec:
         #!/usr/bin/env bash
         jq . sbom-merged.json
     - name: push-to-pulp-select-auth
-      image: quay.io/redhat-user-workloads/artifact-storage-tenant/tooling/pulp-tool-container:latest@sha256:583e721a97c0d24b5d71eb23e2a0dc5f1622ebacc63a9a8ab0fb702780f21bbd
+      image: quay.io/redhat-user-workloads/artifact-storage-tenant/tooling/pulp-tool-container:latest@sha256:fc6323a0fc39af37c62abd64c813d5ab753f26ea40654aaf0eb82de6b0732d19
       script: |
         #!/usr/bin/env bash
         set -e
