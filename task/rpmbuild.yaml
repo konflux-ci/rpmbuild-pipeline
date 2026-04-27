@@ -195,12 +195,13 @@ spec:
         # https://github.com/rpm-software-management/dnf5/issues/1673
         # (sync with calculate-deps.yaml)
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
-        $success
 
         echo "DEBUG: resultdir file ownership and permissions on remote host"
-        remote_cmd ls -la "$HOMEDIR/results/"
-        remote_cmd stat -c "'%a %U:%G %n'" "$HOMEDIR/results/"'*'
-        remote_cmd getfacl "$HOMEDIR/results/"
+        remote_cmd ls -la "$HOMEDIR/results/" || true
+        remote_cmd stat -c "'%a %U:%G %n'" "$HOMEDIR/results/"'*' || true
+        remote_cmd getfacl "$HOMEDIR/results/" || true
+
+        $success
 
         # Ensure result files are world-readable before rsync.  Mock
         # copies RPMs to the resultdir inheriting the host's umask,
