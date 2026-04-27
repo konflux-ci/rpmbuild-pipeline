@@ -202,6 +202,13 @@ spec:
         remote_cmd stat -c "'%a %U:%G %n'" "$HOMEDIR/results/"'*'
         remote_cmd getfacl "$HOMEDIR/results/"
 
+        # Ensure result files are world-readable before rsync.  Mock
+        # copies RPMs to the resultdir inheriting the host's umask,
+        # which on some builders is 0027 — stripping the other-read
+        # bit and causing rsync Permission denied for files owned by
+        # the container's subuid.
+        remote_cmd podman unshare chmod -R a+rX "$HOMEDIR/results/"
+
         resultdir="$workdir/results/$(params.arch)"
         mkdir -p "$resultdir"
         receive "$HOMEDIR/results/" "$resultdir"
