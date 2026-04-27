@@ -197,6 +197,11 @@ spec:
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
         $success
 
+        echo "DEBUG: resultdir file ownership and permissions on remote host"
+        remote_cmd ls -la "$HOMEDIR/results/"
+        remote_cmd stat -c "'%a %U:%G %n'" "$HOMEDIR/results/"'*'
+        remote_cmd getfacl "$HOMEDIR/results/"
+
         resultdir="$workdir/results/$(params.arch)"
         mkdir -p "$resultdir"
         receive "$HOMEDIR/results/" "$resultdir"
