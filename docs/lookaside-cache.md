@@ -61,6 +61,17 @@ https://src.fedoraproject.org/repo/pkgs/rpms/bash/bash-5.3.tar.gz/sha512/05ef640
 https://src.fedoraproject.org/repo/pkgs/rpms/bash/bash-5.3.tar.gz.sig/sha512/e9da98e993528d69bec9c6da272eb7a96858b4ba33487435f584c7df2d73c3ce82f373b5277cc3a7d8dc9ee04410dc06ce476d3f9ade097121bea0570abe07bc/bash-5.3.tar.gz.sig
 ```
 
+## Packages with no lookaside sources
+
+Some packages (e.g., `setup`) ship all their source files directly in the
+dist-git repository and have an empty or missing `sources` file.  The
+`LOOKASIDE_CONFIG` result is still emitted for these builds — it reflects
+the lookaside cache configuration that *would have been used*, not that
+files were actually downloaded.  When consuming `LOOKASIDE_CONFIG`, check
+whether the `sources` file has any entries before attempting to reconstruct
+download URLs.  If it is empty, no tarballs were fetched from the
+lookaside cache and all build inputs came from the repository itself.
+
 ## Scripted example
 
 ```bash
