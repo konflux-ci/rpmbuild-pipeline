@@ -36,29 +36,29 @@ Example output:
 ## Reconstructing source download URLs
 
 The `sources` file in the root of each dist-git repository lists every
-source tarball with its hash.  The current format is:
+source tarball with its hash.  For example, the `bash` package has:
 
 ```text
-SHA512 (glibc-2.39.tar.xz) = 476350092e854...
-SHA512 (glibc-2.39-fedora.patch) = 8b0a02c1012...
+SHA512 (bash-5.3.tar.gz) = 05ef640e8ba011d10f858a270c626daa42ed5a75789d0298ae0ced9b2ebaf93d94d8ed5a211ac30cd34e82af8865e50024144c88a3c979bee7c38e449350e02e
+SHA512 (bash-5.3.tar.gz.sig) = e9da98e993528d69bec9c6da272eb7a96858b4ba33487435f584c7df2d73c3ce82f373b5277cc3a7d8dc9ee04410dc06ce476d3f9ade097121bea0570abe07bc
 ```
 
 Substitute the placeholders in `uri_pattern` using values from the
 `sources` file and `LOOKASIDE_CONFIG`:
 
-| Placeholder  | Source                       | Example              |
-| ------------ | ---------------------------- | -------------------- |
-| `{name}`     | `LOOKASIDE_CONFIG.package`   | `glibc`              |
-| `{filename}` | filename from sources file   | `glibc-2.39.tar.xz` |
-| `{hashtype}` | hash prefix in sources file  | `sha512`             |
-| `{hash}`     | hash value from sources file | `476350092e854...`   |
+| Placeholder  | Source                       | Example            |
+| ------------ | ---------------------------- | ------------------ |
+| `{name}`     | `LOOKASIDE_CONFIG.package`   | `bash`             |
+| `{filename}` | filename from sources file   | `bash-5.3.tar.gz`  |
+| `{hashtype}` | hash prefix in sources file  | `sha512`           |
+| `{hash}`     | hash value from sources file | `05ef640e8ba01...` |
 
 The full download URL is `{lookaside_location}/{uri_pattern}` with
-substitutions applied:
+substitutions applied.  For the `bash` sources file above, this produces:
 
 ```text
-https://src.fedoraproject.org/repo/pkgs/rpms/glibc/\
-  glibc-2.39.tar.xz/sha512/476350092e854.../glibc-2.39.tar.xz
+https://src.fedoraproject.org/repo/pkgs/rpms/bash/bash-5.3.tar.gz/sha512/05ef640e8ba011d10f858a270c626daa42ed5a75789d0298ae0ced9b2ebaf93d94d8ed5a211ac30cd34e82af8865e50024144c88a3c979bee7c38e449350e02e/bash-5.3.tar.gz
+https://src.fedoraproject.org/repo/pkgs/rpms/bash/bash-5.3.tar.gz.sig/sha512/e9da98e993528d69bec9c6da272eb7a96858b4ba33487435f584c7df2d73c3ce82f373b5277cc3a7d8dc9ee04410dc06ce476d3f9ade097121bea0570abe07bc/bash-5.3.tar.gz.sig
 ```
 
 ## Scripted example
@@ -101,20 +101,17 @@ done < sources
 **Fedora** (`https://src.fedoraproject.org`):
 
 ```text
-https://src.fedoraproject.org/repo/pkgs/rpms/glibc/\
-  glibc-2.39.tar.xz/sha512/{hash}/glibc-2.39.tar.xz
+https://src.fedoraproject.org/repo/pkgs/rpms/bash/bash-5.3.tar.gz/sha512/{hash}/bash-5.3.tar.gz
 ```
 
 **CentOS Stream** (`https://sources.stream.centos.org`):
 
 ```text
-https://sources.stream.centos.org/sources/rpms/kernel/\
-  linux-6.12.tar.xz/sha512/{hash}/linux-6.12.tar.xz
+https://sources.stream.centos.org/sources/rpms/bash/bash-5.3.tar.gz/sha512/{hash}/bash-5.3.tar.gz
 ```
 
 **Hummingbird** (`https://d1766whheab9hg.cloudfront.net`):
 
 ```text
-https://d1766whheab9hg.cloudfront.net/rpms/glibc/\
-  glibc-2.39.tar.xz/sha512/{hash}/glibc-2.39.tar.xz
+https://d1766whheab9hg.cloudfront.net/rpms/bash/bash-5.3.tar.gz/sha512/{hash}/bash-5.3.tar.gz
 ```
