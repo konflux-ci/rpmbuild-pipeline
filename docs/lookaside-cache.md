@@ -10,18 +10,24 @@ URLs that were used to fetch source tarballs.
 After a successful pipeline run, extract the configuration from the build
 attestation:
 
+Konflux currently produces SLSA v0.2 attestations.  Task results are stored
+under `predicate.buildConfig.tasks[].results`:
+
 ```bash
 cosign download attestation $IMAGE_URL | \
   jq -r '.payload' | base64 -d | \
-  jq '.predicate.runDetails.byproducts[] |
-    select(.name == "LOOKASIDE_CONFIG") | .content'
+  jq '.predicate.buildConfig.tasks[]
+    | select(.results != null)
+    | .results[]
+    | select(.name == "LOOKASIDE_CONFIG")
+    | .value' -r
 ```
 
 Example output:
 
 ```json
 {
-  "package": "glibc",
+  "package": "setup",
   "lookaside_location": "https://src.fedoraproject.org",
   "uri_pattern": "repo/pkgs/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
 }
@@ -61,8 +67,11 @@ https://src.fedoraproject.org/repo/pkgs/rpms/glibc/\
 # Parse the LOOKASIDE_CONFIG
 config=$(cosign download attestation "$IMAGE_URL" | \
   jq -r '.payload' | base64 -d | \
-  jq -r '.predicate.runDetails.byproducts[] |
-    select(.name == "LOOKASIDE_CONFIG") | .content')
+  jq -r '.predicate.buildConfig.tasks[]
+    | select(.results != null)
+    | .results[]
+    | select(.name == "LOOKASIDE_CONFIG")
+    | .value')
 
 location=$(echo "$config" | jq -r '.lookaside_location')
 pattern=$(echo "$config" | jq -r '.uri_pattern')
