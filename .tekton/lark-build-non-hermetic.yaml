@@ -21,14 +21,15 @@ metadata:
     appstudio.openshift.io/application: pipelines
     appstudio.openshift.io/component: ci-for-pipeline
     pipelines.appstudio.openshift.io/type: build
-  name: ci-for-pipeline-on-pull-request
+  name: rpmbuild-non-hermetic-plus-rpmautospec
   namespace: rpm-build-pipeline-tenant
 spec:
   params:
+    # try to select a package that uses rpmautospec
     - name: package-name
-      value: cpio
+      value: python-lark
     - name: git-url
-      value: "https://src.fedoraproject.org/rpms/cpio.git"
+      value: "https://src.fedoraproject.org/rpms/python-lark.git"
     - name: revision
       value: "main"
     - name: target-branch
@@ -40,7 +41,7 @@ spec:
     - name: test-suffix
       value: -rpmbuild-pipeline
     - name: ociStorage
-      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-cpio-{{ revision }}
+      value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-python-lark-{{ revision }}
     - name: hermetic
       value: false
     - name: build-architectures
