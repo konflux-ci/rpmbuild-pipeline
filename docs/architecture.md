@@ -69,6 +69,10 @@ using [MPC][].
 - **process-sources**
     - Downloads the precise set of source files (typically tarballs) from the
       corresponding DistGit lookaside cache.
+    - Emits a `LOOKASIDE_CONFIG` result containing the cache location and URL
+      pattern used to download sources, enabling consumers to reconstruct
+      download URLs for attestation verification.  See
+      [lookaside-cache.md](lookaside-cache.md) for details.
     - This task provides a "frozen" set of source files for the subsequent RPM
       builds.  The output from this task (see the ociStorage parameter)
       represents the final set of source code files that will *exclusively*
