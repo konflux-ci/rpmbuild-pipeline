@@ -129,7 +129,7 @@ spec:
         CURL_HOME="$CURL_HOME" dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
-          rpmautospec process-distgit "$specfile_name" "$specfile_name"
+          RPMAUTOSPEC_SPEC_PARSER=norpm rpmautospec process-distgit "$specfile_name" "$specfile_name"
 
           # Generate the patch-git-generated-log.txt and
           # patch-git-generated-commit.txt files.  These are harmless,
