@@ -72,22 +72,22 @@ spec:
         name: workdir
   steps:
     - name: use-trusted-artifact-x86-64
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:981fba82bbc06f6faa99afb83ce93ec165216912e38a341496163e48f569d57e
       args:
         - use
         - $(params.x86_64-artifact)=/var/workdir/results
     - name: use-trusted-artifact-aarch64
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:981fba82bbc06f6faa99afb83ce93ec165216912e38a341496163e48f569d57e
       args:
         - use
         - $(params.aarch64-artifact)=/var/workdir/results
     - name: use-trusted-artifact-s390x
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:981fba82bbc06f6faa99afb83ce93ec165216912e38a341496163e48f569d57e
       args:
         - use
         - $(params.s390x-artifact)=/var/workdir/results
     - name: use-trusted-artifact-ppc64le
-      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e
+      image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:981fba82bbc06f6faa99afb83ce93ec165216912e38a341496163e48f569d57e
       args:
         - use
         - $(params.ppc64le-artifact)=/var/workdir/results
