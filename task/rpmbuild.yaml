@@ -84,7 +84,7 @@ spec:
         #!/bin/bash
         set -ex
         if test "$(params.PLATFORM)" = localhost; then
-          # do nothing (architecture not selected)
+          echo "Step skipped - architecture $(params.arch) not selected for build"
           exit 0
         fi
         mkdir -p ~/.ssh
@@ -255,6 +255,7 @@ spec:
         #!/usr/bin/env bash
 
         if test "$(params.PLATFORM)" = localhost; then
+          echo "Step skipped - architecture $(params.arch) not selected for build"
           exit 0
         fi
 
@@ -299,6 +300,7 @@ spec:
       script: |
         #!/usr/bin/env bash
         if test "$(params.PLATFORM)" = localhost; then
+          echo "Step skipped - architecture $(params.arch) not selected for build"
           exit 0
         fi
 
