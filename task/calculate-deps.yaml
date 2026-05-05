@@ -69,7 +69,7 @@ spec:
         #!/bin/bash
         set -ex
         if test "$(params.PLATFORM)" = localhost; then
-          # do nothing (architecture not selected)
+          echo "Step skipped - architecture $(params.arch) not selected for dependency calculation"
           exit 0
         fi
         mkdir -p ~/.ssh
