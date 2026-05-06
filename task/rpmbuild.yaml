@@ -230,6 +230,7 @@ spec:
               gen_ancestors_from_src.py \
                   -s /source \
                   --specfile /results/expanded-spec.txt \
+                  --already-expanded \
                   --forked-from "https://src.fedoraproject.org/rpms/$(params.package-name)" \
                   -o /results/ancestors.json
           mkdir -p "$resultdir/results"
