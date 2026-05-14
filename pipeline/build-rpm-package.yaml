@@ -150,6 +150,19 @@ spec:
       default: 'fedora-rawhide'
       description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
       type: string
+    - name: forked-from
+      description: |
+        URL prefix of the upstream dist-git repository for lookaside cache resolution.
+        The package name will be appended to this prefix.
+        If not specified, defaults to https://src.fedoraproject.org/rpms/.
+      type: string
+      default: "https://src.fedoraproject.org/rpms/"
+    - name: dist-git-client-configdir
+      description: |
+        Path to the directory containing the dist-git-client configuration.
+        Passed to dist-git-client via --configdir option.
+      type: string
+      default: ""
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -157,6 +170,11 @@ spec:
     - description: ""
       name: CHAINS-GIT_COMMIT
       value: $(tasks.clone-repository.results.commit)
+    - name: LOOKASIDE_CONFIG
+      description: |
+        JSON object containing the lookaside cache configuration used to download sources.
+        Contains lookaside_location, uri_pattern, and package name for reconstructing source URLs.
+      value: $(tasks.process-sources.results.LOOKASIDE_CONFIG)
     - description: ""
       name: IMAGE_URL
       value: $(tasks.upload-to-quay.results.IMAGE_URL)
@@ -273,6 +291,10 @@ spec:
           value: ["$(params.build-platforms[*])"]
         - name: target-distribution
           value: $(params.target-distribution)
+        - name: forked-from
+          value: $(params.forked-from)
+        - name: dist-git-client-configdir
+          value: $(params.dist-git-client-configdir)
     - name: prepare-mock-config
       retries: 3
       taskRef:

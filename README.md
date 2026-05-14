@@ -23,6 +23,10 @@ run *Mock* builds in the appropriate environment.
 For more technical details, see the [architecture
 overview](docs/architecture.md).
 
+After a build completes, the pipeline records the [lookaside cache
+configuration](docs/lookaside-cache.md) in the build attestation so consumers
+can independently verify source provenance.
+
 **About to [start building RPMs in Konflux](docs/onboarding.md)?  Happy
 building!**
 
