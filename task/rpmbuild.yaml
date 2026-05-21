@@ -293,6 +293,9 @@ spec:
     - name: run-syft
       image: $(params.syft-image)
       workingDir: /var/workdir
+      # The default syft image (syft-rhel9) runs as root (UID 0)
+      securityContext:
+        runAsUser: 0
       script: |
         #!/usr/bin/env bash
         if test "$(params.PLATFORM)" = localhost; then
