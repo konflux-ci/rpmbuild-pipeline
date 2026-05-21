@@ -51,6 +51,8 @@ spec:
       value: "rpms/hello"
     - name: mock-config-template-filename-in-sources
       value: "mock/mock.cfg"
+    - name: syft-image
+      value: "quay.io/hummingbird-community/syft:latest-builder"
   pipelineRef:
     resolver: git
     params:
