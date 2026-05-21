@@ -54,6 +54,7 @@ spec:
     - description: Image to use for running syft
       name: syft-image
       type: string
+      default: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
   results:
     - name: rpmbuild-artifact
       description: The Trusted Artifact URI pointing to the artifact with the result of the build.
