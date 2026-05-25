@@ -150,6 +150,10 @@ spec:
       default: 'fedora-rawhide'
       description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
       type: string
+    - name: purl-rpm-namespace
+      description: PURL namespace for RPM packages in the generated SBOM (e.g., fedora, redhat)
+      type: string
+      default: "fedora"
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -685,6 +689,8 @@ spec:
           value: $(tasks.rpmbuild-ppc64le.results.rpmbuild-artifact)
         - name: script-environment-image
           value: $(params.script-environment-image)
+        - name: purl-rpm-namespace
+          value: $(params.purl-rpm-namespace)
       runAfter:
         - rpmbuild-s390x
         - rpmbuild-x86-64

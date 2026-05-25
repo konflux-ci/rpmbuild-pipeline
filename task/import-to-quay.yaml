@@ -52,6 +52,10 @@ spec:
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
       type: string
+    - name: purl-rpm-namespace
+      description: PURL namespace for RPM packages in the generated SBOM (e.g., fedora, redhat)
+      type: string
+      default: "fedora"
   results:
     - name: IMAGE_URL
       description: Location of build artifact
@@ -145,6 +149,9 @@ spec:
         #!/bin/bash
         export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
+        # Configure PURL RPM namespace for SBOM generation
+        mkdir -p /etc/rpmbuild_sbom
+        echo '{"purl_rpm_namespace": "$(params.purl-rpm-namespace)"}' > /etc/rpmbuild_sbom/config.json
         # list dirs
         find . | sort
         # Create empty SPDX doc as placeholder for --syft-sbom (to be removed later)
