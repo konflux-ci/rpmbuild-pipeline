@@ -150,13 +150,12 @@ spec:
         export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         # Configure PURL RPM namespace for SBOM generation
-        mkdir -p /etc/rpmbuild_sbom
-        echo '{"purl_rpm_namespace": "$(params.purl-rpm-namespace)"}' > /etc/rpmbuild_sbom/config.json
+        echo '{"purl_rpm_namespace": "$(params.purl-rpm-namespace)"}' > rpmbuild_sbom_config.json
         # list dirs
         find . | sort
         # Create empty SPDX doc as placeholder for --syft-sbom (to be removed later)
         echo '{"spdxVersion":"SPDX-2.3","packages":[],"files":[],"relationships":[]}' > syft-sbom.json
-        ARGS=(--rpm-dir . --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json)
+        ARGS=(--rpm-dir . --syft-sbom syft-sbom.json --sbom-merged sbom-merged.json --config rpmbuild_sbom_config.json)
         if [ -f ancestors.json ]; then
           ARGS+=(--source-data ancestors.json)
         else
