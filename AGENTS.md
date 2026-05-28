@@ -15,8 +15,8 @@ the RPM Build Pipeline for Konflux. It builds RPM packages against RHEL/Fedora b
 ## Development Workflow
 ### Linting and Testing
 ```bash
-# Lint YAML files
-yamllint -c .yamllint.conf .
+# Lint tekton files
+npx @ibm/tekton-lint@latest task/*.yaml pipeline/*.yaml
 
 # CI automatically runs when PRs are opened/updated at GitHub
 ```
