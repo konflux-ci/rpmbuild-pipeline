@@ -1,6 +1,8 @@
 # AGENTS.md
 
-## Project Overview This is the main/upstream) flavor of
+## Project Overview
+
+This is the (main/upstream) flavor of
 the RPM Build Pipeline for Konflux. It builds RPM packages against RHEL/Fedora buildroots using Tekton pipelines. The pipeline supports multi-architecture builds (aarch64, ppc64le, s390x, x86_64, i686, ...) and hermetic (offline) builds. For details see [architecture](docs/architecture.md) and overall [docs](docs).
 
 ### Key Technologies
@@ -16,7 +18,7 @@ the RPM Build Pipeline for Konflux. It builds RPM packages against RHEL/Fedora b
 # Lint YAML files
 yamllint -c .yamllint.conf .
 
-# CI automatically runs when MRs are opened/updated at gitlab
+# CI automatically runs when PRs are opened/updated at GitHub
 ```
 
 ### Local Build Testing
@@ -27,16 +29,16 @@ yamllint -c .yamllint.conf .
 
 ### Comparing with Other Flavors
 ```bash
-# Compare with opthers flavors (e.g. Fedora)
+# Compare with other flavors (e.g. Fedora)
 ./diff-flavor.sh fedora
 ```
 
 ## Contribution Guidelines
-are covered in [CONTRIBUTING.md](CONTRIBUTING.md)
+Contribution guidelines are covered in [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### AI Attribution
 
-Include `Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]` in commit messages and merge request descriptions when using AI tools.
+Include Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2] in commit messages and pull request descriptions when using AI tools.
 
 ### Code Style
 - YAML files use **2-space indentation** (enforced by .yamllint.conf)
@@ -46,11 +48,11 @@ Include `Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]` in commit messag
 - Keep YAML formatting compatible with Renovate bot for automatic dependency updates
 
 ### CI Requirements
-All merge requests must keep CI green. Multiple sample RPM packages are built on every MR to verify changes.
+All pull requests must keep CI green. Multiple sample RPM packages are built on every PR to verify changes.
 
 ## Task Parameter Conventions
 ### Common Parameters
-For parameters always check the @pipeline/build-rpm-package.yaml, task definitions at @tasks and @docs.
+For parameters always check the pipeline/build-rpm-package.yaml, task definitions at task/ and docs/.
 
 ### Artifact Passing
 Tasks use Trusted Artifacts to pass data between each other:
