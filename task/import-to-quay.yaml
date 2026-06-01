@@ -59,6 +59,10 @@ spec:
       description: PURL namespace for RPM packages in the generated SBOM (e.g., fedora, redhat)
       type: string
       default: "fedora"
+    - name: pulp-target-arch-repo
+      description: Use per-architecture Pulp repositories instead of per-build repos
+      type: string
+      default: "false"
   results:
     - name: IMAGE_URL
       description: Location of build artifact
@@ -191,14 +195,20 @@ spec:
         : > "$(results.PULP-IMAGE_DIGEST.path)"
 
         if [ -f /pulp-access/cli.toml ]; then
-          pulp-tool --config /pulp-access/cli.toml \
-            --build-id "$(params.pipelinerun-id)" \
-            --namespace "$(context.taskRun.namespace)" \
-            upload \
-            --parent-package "$(params.package-name)" \
-            --rpm-path "/var/workdir/results" \
-            --sbom-path "/var/workdir/results/oras-staging/sbom-merged.json" \
+          PULP_ARGS=(
+            pulp-tool --config /pulp-access/cli.toml
+            --build-id "$(params.pipelinerun-id)"
+            --namespace "$(context.taskRun.namespace)"
+            upload
+            --parent-package "$(params.package-name)"
+            --rpm-path "/var/workdir/results"
+            --sbom-path "/var/workdir/results/oras-staging/sbom-merged.json"
             --artifact-results "$(results.PULP-IMAGE_URL.path)","$(results.PULP-IMAGE_DIGEST.path)"
+          )
+          if [ "$(params.pulp-target-arch-repo)" = "true" ]; then
+            PULP_ARGS+=(--target-arch-repo)
+          fi
+          "${PULP_ARGS[@]}"
         else
           echo "Pulp config file does not exist; skipping push and writing empty Pulp result files"
         fi

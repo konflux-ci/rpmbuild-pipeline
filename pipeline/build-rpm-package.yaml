@@ -158,6 +158,10 @@ spec:
       description: Mock chroot name from mock-core-configs (e.g. fedora-rawhide-@ARCH@, fedora-44-@ARCH@)
       type: string
       default: fedora-rawhide-@ARCH@
+    - name: pulp-target-arch-repo
+      description: Use per-architecture Pulp repositories for stable DNF-consumable URLs
+      type: string
+      default: "false"
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -769,6 +773,8 @@ spec:
           value: $(params.script-environment-image)
         - name: purl-rpm-namespace
           value: $(params.purl-rpm-namespace)
+        - name: pulp-target-arch-repo
+          value: $(params.pulp-target-arch-repo)
       runAfter:
         - rpmbuild-s390
         - rpmbuild-s390x
