@@ -154,6 +154,10 @@ spec:
       description: PURL namespace for RPM packages in the generated SBOM (e.g., fedora, redhat)
       type: string
       default: "fedora"
+    - name: chroot
+      description: Mock chroot name from mock-core-configs (e.g. fedora-rawhide-@ARCH@, fedora-44-@ARCH@)
+      type: string
+      default: fedora-rawhide-@ARCH@
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -300,7 +304,7 @@ spec:
         - name: mock-config-template-filename-in-sources
           value: $(params.mock-config-template-filename-in-sources)
         - name: chroot
-          value: fedora-rawhide-@ARCH@
+          value: $(params.chroot)
         - name: ociArtifactExpiresAfter
           value: $(params.ociArtifactExpiresAfter)
     - name: calculate-deps-x86-64
