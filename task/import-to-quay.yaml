@@ -167,6 +167,20 @@ spec:
           echo "WARNING: buildroot_rpms.json not found in oras-staging, skipping buildroot data in SBOM" >&2
         fi
         merge_sboms.py "${ARGS[@]}"
+
+        # Write SBOM_BLOB_URL result here rather than in a later step to avoid
+        # Tekton termination message truncation. Each step's entrypoint includes
+        # ALL accumulated results in its termination message. When the last step
+        # carries too many results, the message exceeds the container runtime's
+        # size limit and is truncated, producing invalid JSON that the Tekton
+        # controller cannot parse. Any result unique to the last step is then
+        # silently lost. By writing SBOM_BLOB_URL here (before the Pulp results
+        # inflate the message), it is captured in this step's termination message
+        # which stays well within the limit.
+        IMAGE_URL=$(cat $(results.IMAGE_URL.path))
+        REPO=${IMAGE_URL%:*}
+        SBOM_DIGEST=$(sha256sum sbom-merged.json | awk '{ print $1 }')
+        echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
     - name: show-sbom
       image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
       workingDir: /var/workdir/results/oras-staging
@@ -207,18 +221,6 @@ spec:
          --type spdx \
          $(cat $(results.IMAGE_URL.path))@$(cat $(results.IMAGE_DIGEST.path))
       workingDir: /var/workdir
-    - name: report-sbom-url
-      image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
-      workingDir: /var/workdir/results/oras-staging
-      script: |
-        #!/usr/bin/env bash
-        set -e
-        IMAGE_URL=$(cat $(results.IMAGE_URL.path))
-        REPO=${IMAGE_URL%:*}
-        echo "Found that ${REPO} is the repository for ${IMAGE_URL}"
-        SBOM_DIGEST=$(sha256sum sbom-merged.json | awk '{ print $1 }')
-        echo "Found that ${SBOM_DIGEST} is the SBOM digest"
-        echo -n "${REPO}@sha256:${SBOM_DIGEST}" | tee $(results.SBOM_BLOB_URL.path)
   volumes:
     - name: pulp-access-credentials
       secret:
