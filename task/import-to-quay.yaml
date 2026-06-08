@@ -177,6 +177,10 @@ spec:
         # silently lost. By writing SBOM_BLOB_URL here (before the Pulp results
         # inflate the message), it is captured in this step's termination message
         # which stays well within the limit.
+        if [ ! -f sbom-merged.json ]; then
+          echo "Error: sbom-merged.json was not generated." >&2
+          exit 1
+        fi
         IMAGE_URL=$(cat $(results.IMAGE_URL.path))
         REPO=${IMAGE_URL%:*}
         SBOM_DIGEST=$(sha256sum sbom-merged.json | awk '{ print $1 }')
