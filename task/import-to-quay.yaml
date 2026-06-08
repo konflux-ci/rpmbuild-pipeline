@@ -71,6 +71,7 @@ spec:
     - name: PULP-IMAGE_DIGEST
       description: Pulp build artifact digest
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir/results
         name: workdir

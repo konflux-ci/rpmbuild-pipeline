@@ -59,6 +59,7 @@ spec:
   # we have to configure per-Task timeout in the Pipeline
   # file.
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir
         name: workdir
