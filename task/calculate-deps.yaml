@@ -49,6 +49,7 @@ spec:
       description: The Trusted Artifact URI pointing to the artifact with the result of the deps calculation.
       type: string
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir
         name: workdir

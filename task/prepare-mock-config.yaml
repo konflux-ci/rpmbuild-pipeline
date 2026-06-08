@@ -36,6 +36,7 @@ spec:
       description: Mock configuration template file (trusted-artifact, string content)
       type: string
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir
         name: workdir

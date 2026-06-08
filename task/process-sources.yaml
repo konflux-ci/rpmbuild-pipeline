@@ -97,6 +97,7 @@ spec:
         build-i686:
           type: string
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir
         name: workdir

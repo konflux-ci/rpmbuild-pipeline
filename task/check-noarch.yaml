@@ -28,6 +28,7 @@ spec:
       name: script-environment-image
       type: string
   stepTemplate:
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /var/workdir
         name: workdir
