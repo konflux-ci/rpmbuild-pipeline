@@ -8,12 +8,37 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Track temp files for cleanup on signal
+_TEMP_FILES=()
+_global_cleanup() {
+    for f in "${_TEMP_FILES[@]}"; do
+        rm -f "$f" 2>/dev/null
+    done
+}
+trap _global_cleanup EXIT
+
 # Default values
 NAMESPACE=""
 OUTPUT_DIR="."
 PIPELINERUN=""
 SHOW_HELP=false
 USE_KUBEARCHIVE=false
+_HAS_KUBEARCHIVE=""
+
+has_kubearchive() {
+    if [[ -z "$_HAS_KUBEARCHIVE" ]]; then
+        if command -v kubectl &> /dev/null && kubectl ka version &> /dev/null; then
+            _HAS_KUBEARCHIVE=yes
+        else
+            _HAS_KUBEARCHIVE=no
+        fi
+    fi
+    [[ "$_HAS_KUBEARCHIVE" == "yes" ]]
+}
+
+kubearchive_install_hint() {
+    echo "Install kubectl ka to access archived PipelineRuns: https://kubearchive.github.io/kubearchive/main/cli/installation.html"
+}
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -23,10 +48,12 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --namespace|-n)
+            [[ $# -lt 2 ]] && { echo -e "${RED}Error: $1 requires a value${NC}"; exit 1; }
             NAMESPACE="$2"
             shift 2
             ;;
         --output-dir|-o)
+            [[ $# -lt 2 ]] && { echo -e "${RED}Error: $1 requires a value${NC}"; exit 1; }
             OUTPUT_DIR="$2"
             shift 2
             ;;
@@ -65,10 +92,10 @@ REQUIRED TOOLS:
       Install: https://jqlang.github.io/jq/download/
 
     For downloading artifacts, install one of:
-    - oras (recommended): OCI Registry As Storage CLI
-      Install: https://oras.land/
-    - podman: Container management tool
+    - podman (recommended): Container management tool
       Install: https://podman.io/
+    - oras: OCI Registry As Storage CLI
+      Install: https://oras.land/
 
 OPTIONAL TOOLS (for archived PipelineRuns):
     - kubectl ka: KubeArchive CLI plugin
@@ -151,7 +178,7 @@ fetch_pipelinerun() {
     local pr_name="$1"
     if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
         setup_kubearchive_host
-        kubectl ka get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}'
+        kubectl ka get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
     else
         $KUBECTL get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
     fi
@@ -162,7 +189,7 @@ fetch_taskrun() {
     local taskrun_name="$1"
     if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
         setup_kubearchive_host
-        kubectl ka get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}'
+        kubectl ka get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
     else
         $KUBECTL get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
     fi
@@ -193,23 +220,23 @@ check_tools() {
         missing_artifact_tools+=("oras or podman")
     fi
 
-    if [[ ${#missing_tools[@]} -gt 0 ]] || [[ ${#missing_artifact_tools[@]} -gt 0 ]]; then
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
         error "Required tools not found:"
         for tool in "${missing_tools[@]}"; do
             echo "  - $tool"
         done
         echo ""
-        if [[ ${#missing_artifact_tools[@]} -gt 0 ]]; then
-            echo "For downloading artifacts, install one of:"
-            echo "  - oras (recommended): https://oras.land/"
-            echo "  - podman: https://podman.io/"
-        fi
-        echo ""
         echo "Installation guides:"
         echo "  - oc: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html"
         echo "  - tkn: https://tekton.dev/docs/cli/"
-        echo "  - jq: https://jqlang.github.io/jq/download/"
+        echo "  - jq: https://jqlang.github.io/jq/download/ (dnf install jq)"
         exit 1
+    fi
+
+    if [[ ${#missing_artifact_tools[@]} -gt 0 ]]; then
+        warn "No artifact download tools found (podman or oras). Log downloads will still work."
+        echo "  - podman (recommended): https://podman.io/ (dnf install podman)"
+        echo "  - oras: https://oras.land/ (dnf install golang-oras)"
     fi
 
     # Determine which kubectl command to use
@@ -222,10 +249,18 @@ check_tools() {
 
 # Check if logged in
 check_login() {
-    if ! $KUBECTL whoami &> /dev/null; then
-        error "Not logged into any cluster"
-        echo "Please run: oc login <cluster-api-url>"
-        exit 1
+    if [[ "$KUBECTL" == "oc" ]]; then
+        if ! oc whoami &> /dev/null; then
+            error "Not logged into any cluster"
+            echo "Please run: oc login <cluster-api-url>"
+            exit 1
+        fi
+    else
+        if ! kubectl cluster-info &> /dev/null; then
+            error "Not logged into any cluster"
+            echo "Please configure kubectl access to your cluster"
+            exit 1
+        fi
     fi
 
     local current_cluster
@@ -275,7 +310,7 @@ list_pipelineruns() {
         warn "No live PipelineRuns found in namespace $NAMESPACE"
 
         # Check if kubearchive is available
-        if command -v kubearchive &> /dev/null; then
+        if has_kubearchive; then
             info "Trying kubearchive for archived PipelineRuns..."
             if ! try_kubearchive_list; then
                 error "No PipelineRuns found (live or archived)"
@@ -284,8 +319,7 @@ list_pipelineruns() {
             return
         else
             echo ""
-            echo "Tip: Install kubearchive to access older archived PipelineRuns:"
-            echo "  https://github.com/kubearchive/kubearchive"
+            echo "Tip: $(kubearchive_install_hint)"
             exit 1
         fi
     fi
@@ -303,20 +337,20 @@ list_pipelineruns() {
     while IFS='|' read -r name status timestamp; do
         PR_MAP[$idx]="$name"
         format_pr_line "$idx" "$name" "$status" "$timestamp"
-        ((idx++))
+        idx=$((idx + 1))
     done <<< "$pr_data"
 
     echo ""
-    read -p "Select PipelineRun number (or 'a' to search archive): " selection
+    read -rp "Select PipelineRun number (or 'a' to search archive): " selection
 
     if [[ "$selection" == "a" ]] || [[ "$selection" == "archive" ]]; then
-        if command -v kubearchive &> /dev/null; then
+        if has_kubearchive; then
             if ! try_kubearchive_list; then
                 error "Failed to retrieve archived PipelineRuns"
                 exit 1
             fi
         else
-            error "kubearchive not installed. Install from: https://github.com/kubearchive/kubearchive"
+            error "kubectl ka not installed. $(kubearchive_install_hint)"
             exit 1
         fi
         return
@@ -366,11 +400,11 @@ try_kubearchive_list() {
     while IFS='|' read -r name status timestamp; do
         PR_MAP[$idx]="$name"
         format_pr_line "$idx" "$name" "$status" "$timestamp"
-        ((idx++))
+        idx=$((idx + 1))
     done <<< "$pr_data"
 
     echo ""
-    read -p "Select PipelineRun number: " selection
+    read -rp "Select PipelineRun number: " selection
 
     if [[ ! "$selection" =~ ^[0-9]+$ ]] || [[ -z "${PR_MAP[$selection]:-}" ]]; then
         error "Invalid selection"
@@ -395,7 +429,7 @@ get_pipelinerun_details() {
             exit 1
         else
             # Not found in live cluster, try kubearchive automatically
-            if command -v kubectl &> /dev/null && kubectl ka version &> /dev/null 2>&1; then
+            if has_kubearchive; then
                 info "PipelineRun not found in live cluster, trying kubearchive..."
                 USE_KUBEARCHIVE=true
                 PR_JSON=$(fetch_pipelinerun "$PIPELINERUN")
@@ -408,8 +442,7 @@ get_pipelinerun_details() {
             else
                 error "PipelineRun '$PIPELINERUN' not found in namespace $NAMESPACE"
                 echo ""
-                echo "Tip: Install kubectl ka to access archived PipelineRuns:"
-                echo "  https://kubearchive.github.io/kubearchive/main/cli/installation.html"
+                echo "Tip: $(kubearchive_install_hint)"
                 exit 1
             fi
         fi
@@ -574,12 +607,12 @@ select_tasks() {
             *) status_color="${NC}" ;;
         esac
         printf "%2d) %-40s ${status_color}%-12s${NC}\n" "$idx" "$task_name" "$status"
-        ((idx++))
+        idx=$((idx + 1))
     done
 
     echo ""
     echo "Enter task numbers (comma-separated, e.g., '1,3,5' or 'all'):"
-    read -p "> " selection
+    read -rp "> " selection
 
     declare -g -a SELECTED_TASKS
 
@@ -590,7 +623,7 @@ select_tasks() {
     else
         IFS=',' read -ra NUMS <<< "$selection"
         for num in "${NUMS[@]}"; do
-            num=$(echo "$num" | xargs) # trim whitespace
+            num="${num#"${num%%[![:space:]]*}"}"; num="${num%"${num##*[![:space:]]}"}"
             if [[ "$num" =~ ^[0-9]+$ ]] && [[ -n "${TASK_MAP[$num]:-}" ]]; then
                 SELECTED_TASKS+=("${TASK_MAP[$num]}")
             else
@@ -607,24 +640,49 @@ select_tasks() {
     success "Selected ${#SELECTED_TASKS[@]} task(s)"
 }
 
+# Resolve the best available auth file for OCI registry access
+resolve_auth_file() {
+    local temp_auth_file="${1:-}"
+    if [[ -n "$temp_auth_file" ]]; then
+        echo "$temp_auth_file"
+    elif [[ -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/containers/auth.json" ]]; then
+        echo "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/containers/auth.json"
+    elif [[ -f "$HOME/.docker/config.json" ]]; then
+        echo "$HOME/.docker/config.json"
+    fi
+}
+
 # Download artifacts using oras or podman
 download_artifact() {
     local artifact_uri="$1"
     local output_path="$2"
 
-    # Create output directory with permissive permissions for container extraction
+    # Create output directory
     mkdir -p "$output_path"
-    chmod 777 "$output_path"
+    chmod 755 "$output_path"
 
     # Strip 'oci:' prefix for oras, keep it for build-trusted-artifacts
     local oras_uri="${artifact_uri#oci:}"
 
     # Prepare credentials if available
     local temp_auth_file=""
+    local temp_extract_dir=""
+    local error_log=""
+    _cleanup_download() {
+        if [[ -n "${temp_extract_dir:-}" ]]; then rm -rf "$temp_extract_dir"; fi
+        if [[ -n "${error_log:-}" ]]; then rm -f "$error_log"; fi
+        if [[ -n "${temp_auth_file:-}" ]]; then rm -f "$temp_auth_file"; fi
+    }
+    trap _cleanup_download RETURN
     if [[ -n "${ARTIFACT_PULL_SECRET:-}" ]]; then
         temp_auth_file=$(mktemp)
+        chmod 600 "$temp_auth_file"
+        _TEMP_FILES+=("$temp_auth_file")
         echo "$ARTIFACT_PULL_SECRET" > "$temp_auth_file"
     fi
+
+    local auth_file
+    auth_file=$(resolve_auth_file "$temp_auth_file")
 
     # Prefer podman with build-trusted-artifacts over oras
     # Reason: TaskRun results may contain blob digests instead of manifest digests,
@@ -632,76 +690,54 @@ download_artifact() {
     if command -v podman &> /dev/null; then
         # Use podman with build-trusted-artifacts image (expects oci: prefix)
         # Extract to /tmp first to avoid virtiofs permission issues, then copy to final destination
-        local temp_extract_dir=$(mktemp -d)
+        temp_extract_dir=$(mktemp -d)
         local container_output="/tmp/output"
         # Ensure artifact_uri has oci: prefix
         [[ "$artifact_uri" != oci:* ]] && artifact_uri="oci:$artifact_uri"
 
-        # Use pull credentials if available, otherwise try system config
-        local auth_opts=""
-        if [[ -n "$temp_auth_file" ]]; then
-            # Use the credentials from ImageRepository
-            auth_opts="-v $temp_auth_file:/run/containers/0/auth.json:ro"
-        elif [[ -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/containers/auth.json" ]]; then
-            auth_opts="-v ${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/containers/auth.json:/run/containers/0/auth.json:ro"
-        elif [[ -f "$HOME/.docker/config.json" ]]; then
-            auth_opts="-v $HOME/.docker/config.json:/run/containers/0/auth.json:ro"
+        local auth_opts=()
+        if [[ -n "$auth_file" ]]; then
+            auth_opts=(-v "$auth_file:/run/containers/0/auth.json:ro")
         fi
 
-        local error_log=$(mktemp)
-        if podman run --rm \
-            $auth_opts \
+        error_log=$(mktemp)
+        # Image digest from https://quay.io/repository/konflux-ci/build-trusted-artifacts?tab=tags
+        local podman_rc=0
+        podman run --rm \
+            ${auth_opts[@]+"${auth_opts[@]}"} \
             -v "$temp_extract_dir:$container_output:Z" \
             quay.io/konflux-ci/build-trusted-artifacts@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e \
-            use "$artifact_uri=$container_output" 2>"$error_log"; then
-            # Successfully extracted to temp directory, now copy to final destination
-            if ls "$temp_extract_dir"/* &>/dev/null 2>&1; then
-                cp -r "$temp_extract_dir"/* "$output_path/" 2>/dev/null || true
-                rm -rf "$temp_extract_dir"
-                rm -f "$error_log" "$temp_auth_file"
-                return 0
-            else
-                # No files extracted
-                rm -rf "$temp_extract_dir"
-                rm -f "$error_log" "$temp_auth_file"
-                return 1
-            fi
-        else
-            # Check if files were extracted despite non-zero exit (permission warnings)
-            if ls "$temp_extract_dir"/* &>/dev/null 2>&1; then
-                # Files were extracted despite warnings, copy them
-                cp -r "$temp_extract_dir"/* "$output_path/" 2>/dev/null || true
-                rm -rf "$temp_extract_dir"
-                rm -f "$error_log" "$temp_auth_file"
-                return 0
-            else
-                local error_msg=$(cat "$error_log" | grep -E "(error|Error|failed|Failed|not found)" | head -2 | tr '\n' ' ')
-                [[ -z "$error_msg" ]] && error_msg="Authentication or network issue - artifacts may require cluster credentials"
-                warn "Artifact download failed: $error_msg"
-                rm -rf "$temp_extract_dir"
-                rm -f "$error_log" "$temp_auth_file"
-                return 1
-            fi
+            use "$artifact_uri=$container_output" 2>"$error_log" || podman_rc=$?
+        # Check for extracted files (podman may exit non-zero on permission warnings)
+        if ls "$temp_extract_dir"/* &>/dev/null; then
+            cp -r "$temp_extract_dir"/* "$output_path/" 2>/dev/null || true
+            return 0
         fi
+        local error_msg
+        if [[ $podman_rc -eq 0 ]]; then
+            error_msg="No files extracted from artifact (empty artifact layer?)"
+        else
+            error_msg=$(grep -E "(error|Error|failed|Failed|not found)" "$error_log" | head -2 | tr '\n' ' ' || true)
+            [[ -z "$error_msg" ]] && error_msg="Authentication or network issue - artifacts may require cluster credentials"
+        fi
+        warn "Artifact download failed: $error_msg"
+        return 1
     elif command -v oras &> /dev/null; then
         # Fallback to oras (needs URI without oci: prefix)
         # Note: oras pull only works with manifest digests, not blob digests
-        local error_log=$(mktemp)
-        local oras_cmd="oras pull \"$oras_uri\" -o \"$output_path\""
+        error_log=$(mktemp)
 
-        # Add credentials if available
-        if [[ -n "$temp_auth_file" ]]; then
-            oras_cmd="oras pull \"$oras_uri\" -o \"$output_path\" --registry-config \"$temp_auth_file\""
+        local oras_opts=()
+        if [[ -n "$auth_file" ]]; then
+            oras_opts=(--registry-config "$auth_file")
         fi
 
-        if eval $oras_cmd 2>"$error_log"; then
-            rm -f "$error_log" "$temp_auth_file"
+        if oras pull "$oras_uri" -o "$output_path" ${oras_opts[@]+"${oras_opts[@]}"} 2>"$error_log"; then
             return 0
-        else
-            warn "oras pull failed (may need podman for blob digests): $(cat "$error_log" | head -3 | tr '\n' ' ')"
-            rm -f "$error_log" "$temp_auth_file"
-            return 1
         fi
+
+        warn "oras pull failed (may need podman for blob digests): $(head -3 "$error_log" | tr '\n' ' ')"
+        return 1
     else
         error "No artifact download tool available (need podman or oras)"
         return 1
@@ -757,13 +793,13 @@ download_task_logs() {
             local log_file="$output_dir/${step_name}.log"
             # Use kubectl ka logs to get container logs from archived pod
             if kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "step-$step_name" > "$log_file" 2>/dev/null; then
-                ((success_count++))
+                success_count=$((success_count + 1))
             else
                 # Try without "step-" prefix
                 if kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "$step_name" > "$log_file" 2>/dev/null; then
-                    ((success_count++))
+                    success_count=$((success_count + 1))
                 else
-                    ((fail_count++))
+                    fail_count=$((fail_count + 1))
                     rm -f "$log_file"
                 fi
             fi
@@ -775,9 +811,9 @@ download_task_logs() {
 
             local log_file="$output_dir/${step_name}.log"
             if tkn taskrun logs "$taskrun_name" -n "$NAMESPACE" -s "$step_name" > "$log_file" 2>/dev/null; then
-                ((success_count++))
+                success_count=$((success_count + 1))
             else
-                ((fail_count++))
+                fail_count=$((fail_count + 1))
                 rm -f "$log_file"
             fi
         done <<< "$steps"
@@ -824,6 +860,10 @@ download_task() {
             if download_artifact "$uri" "$artifact_dir"; then
                 artifacts_success=true
             fi
+            # Remove empty artifact directories (e.g. empty artifact layers)
+            if [[ -d "$artifact_dir" ]] && ! find "$artifact_dir" -type f -print -quit | grep -q .; then
+                rm -rf "$artifact_dir"
+            fi
         done <<< "$artifact_data"
     fi
 
@@ -857,7 +897,7 @@ download_all_tasks() {
 
     for task_name in "${SELECTED_TASKS[@]}"; do
         download_task "$task_name" "$task_num" "$total_tasks"
-        ((task_num++))
+        task_num=$((task_num + 1))
     done
 }
 
@@ -873,23 +913,28 @@ print_summary() {
     local success_logs=0
     local failed=0
 
-    for task_name in "${!DOWNLOAD_RESULTS[@]}"; do
-        case "${DOWNLOAD_RESULTS[$task_name]}" in
+    # Iterate in the same order as SELECTED_TASKS to maintain consistency
+    for task_name in "${SELECTED_TASKS[@]}"; do
+        case "${DOWNLOAD_RESULTS[$task_name]:-unknown}" in
             success-both)
-                ((success_both++))
+                success_both=$((success_both + 1))
                 success "$task_name (artifacts + logs)"
                 ;;
             success-artifacts)
-                ((success_artifacts++))
+                success_artifacts=$((success_artifacts + 1))
                 warn "$task_name (artifacts only, no logs)"
                 ;;
             success-logs)
-                ((success_logs++))
+                success_logs=$((success_logs + 1))
                 warn "$task_name (logs only, no artifacts)"
                 ;;
             failed)
-                ((failed++))
+                failed=$((failed + 1))
                 error "$task_name (failed)"
+                ;;
+            *)
+                failed=$((failed + 1))
+                error "$task_name (unknown status)"
                 ;;
         esac
     done
@@ -929,7 +974,7 @@ main() {
     # Check if directory exists
     if [[ -d "$TARGET_DIR" ]]; then
         warn "Directory already exists: $TARGET_DIR"
-        read -p "Overwrite? [y/N]: " confirm
+        read -rp "Overwrite? [y/N]: " confirm
         if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
             info "Cancelled"
             exit 0
