@@ -18,21 +18,25 @@ Download artifacts and logs from Konflux Tekton PipelineRuns.
 
 - **oc** or **kubectl** - Kubernetes/OpenShift CLI
   - Install: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html
+  - Default OS version is often not sufficient
 
 - **tkn** - Tekton CLI
   - Install: https://tekton.dev/docs/cli/
 
 - **jq** - JSON processor
+  - Install: dnf install jq
   - Install: https://jqlang.github.io/jq/download/
   - Usually pre-installed on most Linux distributions
 
 ### Artifact Download Tools (one required)
 
 - **oras** - OCI Registry As Storage CLI
+  - Install: dnf install golang-oras
   - Install: https://oras.land/
   - Lightweight, purpose-built tool for OCI artifacts
 
 - **podman** - Container management tool
+  - Install: dnf install podman
   - Install: https://podman.io/
   - More widely available, especially in RHEL/Fedora environments
   - Used as fallback if oras is not available

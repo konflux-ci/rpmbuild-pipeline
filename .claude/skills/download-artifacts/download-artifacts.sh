@@ -201,14 +201,14 @@ check_tools() {
         echo ""
         if [[ ${#missing_artifact_tools[@]} -gt 0 ]]; then
             echo "For downloading artifacts, install one of:"
-            echo "  - oras (recommended): https://oras.land/"
-            echo "  - podman: https://podman.io/"
+            echo "  - oras (recommended): https://oras.land/ (dnf install golang-oras)"
+            echo "  - podman: https://podman.io/ (dnf install podman)"
         fi
         echo ""
         echo "Installation guides:"
         echo "  - oc: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html"
         echo "  - tkn: https://tekton.dev/docs/cli/"
-        echo "  - jq: https://jqlang.github.io/jq/download/"
+        echo "  - jq: https://jqlang.github.io/jq/download/ (dnf install jq)"
         exit 1
     fi
 
