@@ -42,9 +42,9 @@ spec:
     - name: ociStorage
       value: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/ci-for-pipeline:on-pr-libecpg-{{ revision }}
     - name: chroot
-      value: fedora-44-@ARCH@
+      value: fedora-rawhide-@ARCH@
     - name: target-distribution
-      value: fedora-44
+      value: fedora-rawhide
     - name: build-architectures
       value:
         - x86_64
