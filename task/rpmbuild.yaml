@@ -204,11 +204,6 @@ spec:
         # (sync with calculate-deps.yaml)
         remote_cmd "tar xvfO '$HOMEDIR'/results/chroot_scan.tar.gz 2>&1 | cat"
 
-        echo "DEBUG: resultdir file ownership and permissions on remote host"
-        remote_cmd ls -la "$HOMEDIR/results/" || true
-        remote_cmd stat -c "'%a %U:%G %n'" "$HOMEDIR/results/"'*' || true
-        remote_cmd getfacl "$HOMEDIR/results/" || true
-
         $success
 
         # Ensure result files are world-readable before rsync.  Mock
