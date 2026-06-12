@@ -30,11 +30,11 @@ Required tools (skill checks automatically on startup):
 - **oc** or **kubectl** - Must be logged into cluster (`oc login <cluster>`)
 - **tkn** - Tekton CLI for log retrieval
 - **jq** - JSON processor for parsing Kubernetes resources
-- **oras** OR **podman** - For downloading Trusted Artifacts from OCI registries
+- **podman** (recommended) OR **oras** - For downloading Trusted Artifacts from OCI registries
 
 Optional tools for accessing archived PipelineRuns:
-- **kubearchive** - Access older PipelineRuns that have been archived from the cluster
-  - Install: https://github.com/kubearchive/kubearchive
+- **kubectl ka** - KubeArchive CLI plugin to access older PipelineRuns that have been archived from the cluster
+  - Install: https://kubearchive.github.io/kubearchive/main/cli/installation.html
   - When no live PipelineRuns are found, the skill automatically checks kubearchive
   - User can also press 'a' when prompted for selection to search archives
 
@@ -76,13 +76,13 @@ kubectl get pipelinerun -n <namespace> -o json
 # Let user select by number or type 'a' to search kubearchive
 
 # If no live PipelineRuns found, automatically try kubearchive (if installed):
-kubearchive query pipelinerun --namespace <namespace> --limit 50
+kubectl ka get pipelinerun --namespace <namespace> --limit 50
 ```
 
 **Kubearchive Support**:
 - If no live PipelineRuns exist, the skill automatically checks kubearchive (if available)
 - When selecting from live PipelineRuns, user can type 'a' or 'archive' to search archives instead
-- Archived PipelineRuns are retrieved via: `kubearchive query pipelinerun --namespace <ns>`
+- Archived PipelineRuns are retrieved via: `kubectl ka get pipelinerun --namespace <ns>`
 - All subsequent operations (TaskRun fetching, log download) work with archived resources
 
 ### Fetch PipelineRun Details
@@ -94,7 +94,7 @@ Get full PipelineRun JSON to extract task information:
 kubectl get pipelinerun <name> -n <namespace> -o json
 
 # OR from kubearchive (for archived PipelineRuns)
-kubearchive get pipelinerun <name> --namespace <namespace>
+kubectl ka get pipelinerun <name> --namespace <namespace>
 ```
 
 ### Parse TaskRuns
@@ -183,7 +183,7 @@ tkn taskrun logs <taskrun-name> -n <namespace> -s <step-name> > <output>/<step-n
 # For archived TaskRuns (from kubearchive)
 # Extract logs from .status.steps[].terminated.message field
 # Note: Archived logs may be limited compared to live logs retrieved via tkn
-kubearchive get taskrun <name> --namespace <namespace> | \
+kubectl ka get taskrun <name> --namespace <namespace> | \
   jq -r '.status.steps[] | select(.name == "<step-name>") | .terminated.message'
 ```
 
@@ -312,13 +312,13 @@ Run: `oc login <cluster-api-url>`
 ### "No PipelineRuns found"
 Check namespace: `oc project` or use `-n` flag
 
-If PipelineRuns have been archived, install kubearchive:
+If PipelineRuns have been archived, install kubectl ka:
 ```bash
-# Install kubearchive CLI
-# See: https://github.com/kubearchive/kubearchive
+# Install KubeArchive CLI plugin
+# See: https://kubearchive.github.io/kubearchive/main/cli/installation.html
 
 # Search for archived PipelineRuns
-kubearchive query pipelinerun --namespace <namespace>
+kubectl ka get pipelinerun --namespace <namespace>
 ```
 
 ### "tkn not found"
