@@ -1,0 +1,45 @@
+---
+name: Tekton Lint
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.tekton/**/*.ya?ml'
+      - 'pipeline/**/*.ya?ml'
+      - 'task/**/*.ya?ml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  tekton-lint:
+    name: Validate Tekton Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Run tekton-lint
+        run: |
+          npx @ibm/tekton-lint@latest \
+            '.tekton/**/*.yaml' \
+            'pipeline/**/*.yaml' \
+            'task/**/*.yaml'
+
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "Tekton lint check completed"
+          echo "Check the output above for any errors or warnings"
