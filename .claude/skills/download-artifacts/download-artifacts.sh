@@ -23,22 +23,6 @@ OUTPUT_DIR="."
 PIPELINERUN=""
 SHOW_HELP=false
 USE_KUBEARCHIVE=false
-_HAS_KUBEARCHIVE=""
-
-has_kubearchive() {
-    if [[ -z "$_HAS_KUBEARCHIVE" ]]; then
-        if command -v kubectl &> /dev/null && kubectl ka version &> /dev/null; then
-            _HAS_KUBEARCHIVE=yes
-        else
-            _HAS_KUBEARCHIVE=no
-        fi
-    fi
-    [[ "$_HAS_KUBEARCHIVE" == "yes" ]]
-}
-
-kubearchive_install_hint() {
-    echo "Install kubectl ka to access archived PipelineRuns: https://kubearchive.github.io/kubearchive/main/cli/installation.html"
-}
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -192,7 +176,7 @@ fetch_taskrun() {
 # Check required tools
 check_tools() {
     local missing=()
-    for tool in oc tkn jq podman; do
+    for tool in oc kubectl tkn jq podman; do
         command -v "$tool" &>/dev/null || missing+=("$tool")
     done
     if [[ ${#missing[@]} -gt 0 ]]; then
@@ -255,20 +239,12 @@ list_pipelineruns() {
 
     if [[ $live_count -eq 0 ]]; then
         warn "No live PipelineRuns found in namespace $NAMESPACE"
-
-        # Check if kubearchive is available
-        if has_kubearchive; then
-            info "Trying kubearchive for archived PipelineRuns..."
-            if ! try_kubearchive_list; then
-                error "No PipelineRuns found (live or archived)"
-                exit 1
-            fi
-            return
-        else
-            echo ""
-            echo "Tip: $(kubearchive_install_hint)"
+        info "Trying kubearchive for archived PipelineRuns..."
+        if ! try_kubearchive_list; then
+            error "No PipelineRuns found (live or archived)"
             exit 1
         fi
+        return
     fi
 
     echo ""
@@ -291,13 +267,8 @@ list_pipelineruns() {
     read -rp "Select PipelineRun number (or 'a' to search archive): " selection
 
     if [[ "$selection" == "a" ]] || [[ "$selection" == "archive" ]]; then
-        if has_kubearchive; then
-            if ! try_kubearchive_list; then
-                error "Failed to retrieve archived PipelineRuns"
-                exit 1
-            fi
-        else
-            error "kubectl ka not installed. $(kubearchive_install_hint)"
+        if ! try_kubearchive_list; then
+            error "Failed to retrieve archived PipelineRuns"
             exit 1
         fi
         return
@@ -374,25 +345,15 @@ get_pipelinerun_details() {
         if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
             error "PipelineRun '$PIPELINERUN' not found in kubearchive for namespace $NAMESPACE"
             exit 1
-        else
-            # Not found in live cluster, try kubearchive automatically
-            if has_kubearchive; then
-                info "PipelineRun not found in live cluster, trying kubearchive..."
-                USE_KUBEARCHIVE=true
-                PR_JSON=$(fetch_pipelinerun "$PIPELINERUN")
-
-                if [[ $(echo "$PR_JSON" | jq -r '.metadata.name // empty') != "$PIPELINERUN" ]]; then
-                    error "PipelineRun '$PIPELINERUN' not found in live cluster or kubearchive"
-                    exit 1
-                fi
-                success "Found PipelineRun in kubearchive"
-            else
-                error "PipelineRun '$PIPELINERUN' not found in namespace $NAMESPACE"
-                echo ""
-                echo "Tip: $(kubearchive_install_hint)"
-                exit 1
-            fi
         fi
+        info "PipelineRun not found in live cluster, trying kubearchive..."
+        USE_KUBEARCHIVE=true
+        PR_JSON=$(fetch_pipelinerun "$PIPELINERUN")
+        if [[ $(echo "$PR_JSON" | jq -r '.metadata.name // empty') != "$PIPELINERUN" ]]; then
+            error "PipelineRun '$PIPELINERUN' not found in live cluster or kubearchive"
+            exit 1
+        fi
+        success "Found PipelineRun in kubearchive"
     fi
 
     local pr_status

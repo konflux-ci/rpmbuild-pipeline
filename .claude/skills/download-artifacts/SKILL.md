@@ -28,15 +28,10 @@ Download artifacts and logs from Konflux Tekton PipelineRuns, organizing them by
 
 Required tools (skill checks automatically on startup):
 - **oc** - Must be logged into cluster (`oc login <cluster>`)
+- **kubectl** with **ka** plugin - KubeArchive CLI for accessing archived PipelineRuns
 - **tkn** - Tekton CLI for log retrieval
 - **jq** - JSON processor for parsing Kubernetes resources
 - **podman** - For downloading Trusted Artifacts from OCI registries
-
-Optional tools for accessing archived PipelineRuns:
-- **kubectl ka** - KubeArchive CLI plugin to access older PipelineRuns that have been archived from the cluster
-  - Install: https://kubearchive.github.io/kubearchive/main/cli/installation.html
-  - When no live PipelineRuns are found, the skill automatically checks kubearchive
-  - User can also press 'a' when prompted for selection to search archives
 
 ## Instructions for Agent
 
