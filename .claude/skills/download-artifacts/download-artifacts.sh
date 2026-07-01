@@ -191,36 +191,12 @@ fetch_taskrun() {
 
 # Check required tools
 check_tools() {
-    local missing_tools=()
-    local missing_artifact_tools=()
-
-    # Check for oc
-    if ! command -v oc &> /dev/null; then
-        missing_tools+=("oc")
-    fi
-
-    # Check for tkn
-    if ! command -v tkn &> /dev/null; then
-        missing_tools+=("tkn")
-    fi
-
-    # Check for jq
-    if ! command -v jq &> /dev/null; then
-        missing_tools+=("jq")
-    fi
-
-    # Check for podman (required for artifact downloads)
-    if ! command -v podman &> /dev/null; then
-        missing_tools+=("podman")
-    fi
-
-    if [[ ${#missing_tools[@]} -gt 0 ]]; then
-        error "Required tools not found:"
-        for tool in "${missing_tools[@]}"; do
-            echo "  - $tool"
-        done
-        echo ""
-        echo "Install with: dnf install ${missing_tools[*]}"
+    local missing=()
+    for tool in oc tkn jq podman; do
+        command -v "$tool" &>/dev/null || missing+=("$tool")
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        error "Missing required tools: ${missing[*]}  (dnf install ${missing[*]})"
         exit 1
     fi
 
