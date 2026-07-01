@@ -85,17 +85,11 @@ DESCRIPTION:
 
 REQUIRED TOOLS:
     - oc or kubectl: OpenShift/Kubernetes CLI
-      Install: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html
     - tkn: Tekton CLI
-      Install: https://tekton.dev/docs/cli/
     - jq: JSON processor
-      Install: https://jqlang.github.io/jq/download/
+    - podman: Container management tool
 
-    For downloading artifacts, install one of:
-    - podman (recommended): Container management tool
-      Install: https://podman.io/
-    - oras: OCI Registry As Storage CLI
-      Install: https://oras.land/
+    Install all with: dnf install oc tkn jq podman
 
 OPTIONAL TOOLS (for archived PipelineRuns):
     - kubectl ka: KubeArchive CLI plugin
@@ -215,9 +209,9 @@ check_tools() {
         missing_tools+=("jq")
     fi
 
-    # Check for artifact download tools
-    if ! command -v oras &> /dev/null && ! command -v podman &> /dev/null; then
-        missing_artifact_tools+=("oras or podman")
+    # Check for podman (required for artifact downloads)
+    if ! command -v podman &> /dev/null; then
+        missing_tools+=("podman")
     fi
 
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
@@ -226,17 +220,8 @@ check_tools() {
             echo "  - $tool"
         done
         echo ""
-        echo "Installation guides:"
-        echo "  - oc: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html"
-        echo "  - tkn: https://tekton.dev/docs/cli/"
-        echo "  - jq: https://jqlang.github.io/jq/download/ (dnf install jq)"
+        echo "Install with: dnf install ${missing_tools[*]}"
         exit 1
-    fi
-
-    if [[ ${#missing_artifact_tools[@]} -gt 0 ]]; then
-        warn "No artifact download tools found (podman or oras). Log downloads will still work."
-        echo "  - podman (recommended): https://podman.io/ (dnf install podman)"
-        echo "  - oras: https://oras.land/ (dnf install golang-oras)"
     fi
 
     # Determine which kubectl command to use
@@ -652,7 +637,7 @@ resolve_auth_file() {
     fi
 }
 
-# Download artifacts using oras or podman
+# Download artifacts using podman
 download_artifact() {
     local artifact_uri="$1"
     local output_path="$2"
@@ -660,9 +645,6 @@ download_artifact() {
     # Create output directory
     mkdir -p "$output_path"
     chmod 755 "$output_path"
-
-    # Strip 'oci:' prefix for oras, keep it for build-trusted-artifacts
-    local oras_uri="${artifact_uri#oci:}"
 
     # Prepare credentials if available
     local temp_auth_file=""
@@ -684,64 +666,37 @@ download_artifact() {
     local auth_file
     auth_file=$(resolve_auth_file "$temp_auth_file")
 
-    # Prefer podman with build-trusted-artifacts over oras
-    # Reason: TaskRun results may contain blob digests instead of manifest digests,
-    # and build-trusted-artifacts uses "oras blob fetch" which handles both cases
-    if command -v podman &> /dev/null; then
-        # Use podman with build-trusted-artifacts image (expects oci: prefix)
-        # Extract to /tmp first to avoid virtiofs permission issues, then copy to final destination
-        temp_extract_dir=$(mktemp -d)
-        local container_output="/tmp/output"
-        # Ensure artifact_uri has oci: prefix
-        [[ "$artifact_uri" != oci:* ]] && artifact_uri="oci:$artifact_uri"
+    temp_extract_dir=$(mktemp -d)
+    local container_output="/tmp/output"
+    [[ "$artifact_uri" != oci:* ]] && artifact_uri="oci:$artifact_uri"
 
-        local auth_opts=()
-        if [[ -n "$auth_file" ]]; then
-            auth_opts=(-v "$auth_file:/run/containers/0/auth.json:ro")
-        fi
-
-        error_log=$(mktemp)
-        # Image digest from https://quay.io/repository/konflux-ci/build-trusted-artifacts?tab=tags
-        local podman_rc=0
-        podman run --rm \
-            ${auth_opts[@]+"${auth_opts[@]}"} \
-            -v "$temp_extract_dir:$container_output:Z" \
-            quay.io/konflux-ci/build-trusted-artifacts@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e \
-            use "$artifact_uri=$container_output" 2>"$error_log" || podman_rc=$?
-        # Check for extracted files (podman may exit non-zero on permission warnings)
-        if ls "$temp_extract_dir"/* &>/dev/null; then
-            cp -r "$temp_extract_dir"/* "$output_path/" 2>/dev/null || true
-            return 0
-        fi
-        local error_msg
-        if [[ $podman_rc -eq 0 ]]; then
-            error_msg="No files extracted from artifact (empty artifact layer?)"
-        else
-            error_msg=$(grep -E "(error|Error|failed|Failed|not found)" "$error_log" | head -2 | tr '\n' ' ' || true)
-            [[ -z "$error_msg" ]] && error_msg="Authentication or network issue - artifacts may require cluster credentials"
-        fi
-        warn "Artifact download failed: $error_msg"
-        return 1
-    elif command -v oras &> /dev/null; then
-        # Fallback to oras (needs URI without oci: prefix)
-        # Note: oras pull only works with manifest digests, not blob digests
-        error_log=$(mktemp)
-
-        local oras_opts=()
-        if [[ -n "$auth_file" ]]; then
-            oras_opts=(--registry-config "$auth_file")
-        fi
-
-        if oras pull "$oras_uri" -o "$output_path" ${oras_opts[@]+"${oras_opts[@]}"} 2>"$error_log"; then
-            return 0
-        fi
-
-        warn "oras pull failed (may need podman for blob digests): $(head -3 "$error_log" | tr '\n' ' ')"
-        return 1
-    else
-        error "No artifact download tool available (need podman or oras)"
-        return 1
+    local auth_opts=()
+    if [[ -n "$auth_file" ]]; then
+        auth_opts=(-v "$auth_file:/run/containers/0/auth.json:ro")
     fi
+
+    error_log=$(mktemp)
+    local podman_rc=0
+    podman run --rm \
+        ${auth_opts[@]+"${auth_opts[@]}"} \
+        -v "$temp_extract_dir:$container_output:Z" \
+        quay.io/konflux-ci/build-trusted-artifacts@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e \
+        use "$artifact_uri=$container_output" 2>"$error_log" || podman_rc=$?
+
+    if ls "$temp_extract_dir"/* &>/dev/null; then
+        cp -r "$temp_extract_dir"/* "$output_path/" 2>/dev/null || true
+        return 0
+    fi
+
+    local error_msg
+    if [[ $podman_rc -eq 0 ]]; then
+        error_msg="No files extracted from artifact (empty artifact layer?)"
+    else
+        error_msg=$(grep -E "(error|Error|failed|Failed|not found)" "$error_log" | head -2 | tr '\n' ' ' || true)
+        [[ -z "$error_msg" ]] && error_msg="Authentication or network issue - artifacts may require cluster credentials"
+    fi
+    warn "Artifact download failed: $error_msg"
+    return 1
 }
 
 # Download task logs (per-step)

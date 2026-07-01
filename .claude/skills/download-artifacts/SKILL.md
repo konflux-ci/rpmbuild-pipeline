@@ -30,7 +30,7 @@ Required tools (skill checks automatically on startup):
 - **oc** or **kubectl** - Must be logged into cluster (`oc login <cluster>`)
 - **tkn** - Tekton CLI for log retrieval
 - **jq** - JSON processor for parsing Kubernetes resources
-- **podman** (recommended) OR **oras** - For downloading Trusted Artifacts from OCI registries
+- **podman** - For downloading Trusted Artifacts from OCI registries
 
 Optional tools for accessing archived PipelineRuns:
 - **kubectl ka** - KubeArchive CLI plugin to access older PipelineRuns that have been archived from the cluster
@@ -149,23 +149,14 @@ kubectl get taskrun <taskrun-name> -n <namespace> -o json
 # Extract .value (the OCI artifact URI)
 ```
 
-Download using podman (preferred) or oras fallback:
-
-**IMPORTANT**: Prefer podman with build-trusted-artifacts over oras!
-- TaskRun results may contain **blob digests** instead of **manifest digests**
-- `oras pull` only works with manifest digests (will fail with "not found")
-- `build-trusted-artifacts` uses `oras blob fetch` which handles both digest types
+Download using podman with build-trusted-artifacts (handles both blob and manifest digests):
 
 ```bash
-# Option 1: podman with build-trusted-artifacts (PREFERRED - handles blob digests)
 podman run --rm \
   -v <auth-file>:/run/containers/0/auth.json:ro \
   -v <output-path>:/tmp/output:Z \
   quay.io/konflux-ci/build-trusted-artifacts@sha256:90a188e90bf8f33cf93016bcfdfd0a3a9e7df6ff13691f001a0ed4f014060e2e \
   use <artifact-uri>=/tmp/output
-
-# Option 2: oras (lightweight but only works with manifest digests)
-oras pull <artifact-uri> -o <output-path> --registry-config <auth-file>
 ```
 
 #### 2. Download Logs
@@ -292,10 +283,8 @@ When tasks are retried, multiple TaskRuns exist for same task:
 
 Trusted Artifacts are stored as OCI artifacts:
 - URI format: `oci://quay.io/redhat-user-workloads/.../package@sha256:digest`
-- **Important**: TaskRun results may contain **blob digests** instead of **manifest digests**
-- The `build-trusted-artifacts` container uses `oras blob fetch` which handles both digest types
-- Plain `oras pull` only works with manifest digests and will fail with "not found" for blob digests
-- **Always prefer podman** with build-trusted-artifacts for reliable downloads
+- TaskRun results may contain blob digests or manifest digests
+- The `build-trusted-artifacts` container handles both digest types
 
 ### Running State
 
@@ -328,12 +317,8 @@ Install Tekton CLI: https://tekton.dev/docs/cli/
 Install jq: https://jqlang.github.io/jq/download/
 
 ### "Artifact download failed"
-If using `oras`, you may see "not found" errors for blob digests. Solutions:
-1. **Install podman** (recommended): https://podman.io/
-2. Check if the artifact actually exists in the registry
-3. Verify credentials are correct
-
-The script prefers podman over oras because TaskRun results often contain blob digests rather than manifest digests.
+1. Check if the artifact actually exists in the registry
+2. Verify credentials are correct
 
 ### "Permission denied"
 Verify cluster access:
@@ -351,7 +336,7 @@ It contains:
 - All tool checking logic
 - PipelineRun/TaskRun parsing with correct API usage
 - Interactive selection menus
-- Artifact download with oras/podman fallback
+- Artifact download via podman
 - Log download per step
 - Progress display and error handling
 
