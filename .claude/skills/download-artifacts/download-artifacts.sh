@@ -84,7 +84,7 @@ DESCRIPTION:
     organizing them by task in a structured directory.
 
 REQUIRED TOOLS:
-    - oc or kubectl: OpenShift/Kubernetes CLI
+    - oc: OpenShift CLI
     - tkn: Tekton CLI
     - jq: JSON processor
     - podman: Container management tool
@@ -174,7 +174,7 @@ fetch_pipelinerun() {
         setup_kubearchive_host
         kubectl ka get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
     else
-        $KUBECTL get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
+        oc get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
     fi
 }
 
@@ -185,7 +185,7 @@ fetch_taskrun() {
         setup_kubearchive_host
         kubectl ka get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
     else
-        $KUBECTL get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
+        oc get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
     fi
 }
 
@@ -194,9 +194,9 @@ check_tools() {
     local missing_tools=()
     local missing_artifact_tools=()
 
-    # Check for oc or kubectl
-    if ! command -v oc &> /dev/null && ! command -v kubectl &> /dev/null; then
-        missing_tools+=("oc or kubectl")
+    # Check for oc
+    if ! command -v oc &> /dev/null; then
+        missing_tools+=("oc")
     fi
 
     # Check for tkn
@@ -224,39 +224,25 @@ check_tools() {
         exit 1
     fi
 
-    # Determine which kubectl command to use
-    if command -v oc &> /dev/null; then
-        KUBECTL="oc"
-    else
-        KUBECTL="kubectl"
-    fi
 }
 
 # Check if logged in
 check_login() {
-    if [[ "$KUBECTL" == "oc" ]]; then
-        if ! oc whoami &> /dev/null; then
-            error "Not logged into any cluster"
-            echo "Please run: oc login <cluster-api-url>"
-            exit 1
-        fi
-    else
-        if ! kubectl cluster-info &> /dev/null; then
-            error "Not logged into any cluster"
-            echo "Please configure kubectl access to your cluster"
-            exit 1
-        fi
+    if ! oc whoami &> /dev/null; then
+        error "Not logged into any cluster"
+        echo "Please run: oc login <cluster-api-url>"
+        exit 1
     fi
 
     local current_cluster
-    current_cluster=$($KUBECTL config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "unknown")
+    current_cluster=$(oc config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "unknown")
     info "Using cluster: $current_cluster"
 }
 
 # Get namespace
 get_namespace() {
     if [[ -z "$NAMESPACE" ]]; then
-        NAMESPACE=$($KUBECTL config view --minify -o jsonpath='{..namespace}' 2>/dev/null || echo "")
+        NAMESPACE=$(oc config view --minify -o jsonpath='{..namespace}' 2>/dev/null || echo "")
         if [[ -z "$NAMESPACE" ]]; then
             NAMESPACE="default"
         fi
@@ -271,7 +257,7 @@ setup_kubearchive_host() {
     if [[ -z "${KUBECTL_PLUGIN_KA_HOST:-}" ]]; then
         # Auto-configure from current cluster
         local server
-        server=$($KUBECTL config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "")
+        server=$(oc config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "")
         if [[ -n "$server" ]]; then
             local cluster_domain
             cluster_domain=$(echo "$server" | sed -E 's|^.*api\.?(.*):[0-9]+$|\1|')
@@ -286,7 +272,7 @@ setup_kubearchive_host() {
 list_pipelineruns() {
     info "Fetching recent PipelineRuns..."
     local prs
-    prs=$($KUBECTL get pipelinerun -n "$NAMESPACE" -o json 2>/dev/null || echo "{}")
+    prs=$(oc get pipelinerun -n "$NAMESPACE" -o json 2>/dev/null || echo "{}")
 
     local live_count
     live_count=$(echo "$prs" | jq -r '.items | length')
@@ -462,7 +448,7 @@ get_pull_credentials() {
 
     # Find ImageRepository for this component
     local imagerepository
-    imagerepository=$($KUBECTL get imagerepository -n "$NAMESPACE" \
+    imagerepository=$(oc get imagerepository -n "$NAMESPACE" \
         -l "appstudio.redhat.com/component=$component" \
         -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 
@@ -473,7 +459,7 @@ get_pull_credentials() {
 
     # Get pull secret name from ImageRepository
     local pull_secret
-    pull_secret=$($KUBECTL get imagerepository "$imagerepository" -n "$NAMESPACE" \
+    pull_secret=$(oc get imagerepository "$imagerepository" -n "$NAMESPACE" \
         -o jsonpath='{.status.credentials.pull-secret}' 2>/dev/null || echo "")
 
     if [[ -z "$pull_secret" ]]; then
@@ -483,7 +469,7 @@ get_pull_credentials() {
 
     # Get the dockerconfigjson from the secret
     local dockerconfig
-    dockerconfig=$($KUBECTL get secret "$pull_secret" -n "$NAMESPACE" \
+    dockerconfig=$(oc get secret "$pull_secret" -n "$NAMESPACE" \
         -o jsonpath='{.data.\.dockerconfigjson}' 2>/dev/null || echo "")
 
     if [[ -z "$dockerconfig" ]]; then

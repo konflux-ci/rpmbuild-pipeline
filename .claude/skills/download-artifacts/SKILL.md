@@ -27,7 +27,7 @@ Download artifacts and logs from Konflux Tekton PipelineRuns, organizing them by
 ## Prerequisites
 
 Required tools (skill checks automatically on startup):
-- **oc** or **kubectl** - Must be logged into cluster (`oc login <cluster>`)
+- **oc** - Must be logged into cluster (`oc login <cluster>`)
 - **tkn** - Tekton CLI for log retrieval
 - **jq** - JSON processor for parsing Kubernetes resources
 - **podman** - For downloading Trusted Artifacts from OCI registries
