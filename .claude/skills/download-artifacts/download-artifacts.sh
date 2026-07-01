@@ -22,7 +22,6 @@ NAMESPACE=""
 OUTPUT_DIR="."
 PIPELINERUN=""
 SHOW_HELP=false
-USE_KUBEARCHIVE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -69,16 +68,12 @@ DESCRIPTION:
 
 REQUIRED TOOLS:
     - oc: OpenShift CLI
-    - tkn: Tekton CLI
+    - kubectl with ka plugin (kubearchive)
     - jq: JSON processor
     - podman: Container management tool
 
-    Install all with: dnf install oc tkn jq podman
-
-OPTIONAL TOOLS (for archived PipelineRuns):
-    - kubectl ka: KubeArchive CLI plugin
-      Install: https://kubearchive.github.io/kubearchive/main/cli/installation.html
-      Automatically configured from current cluster context
+    Install: dnf install oc jq podman
+    kubectl ka: https://kubearchive.github.io/kubearchive/main/cli/installation.html
 
 USAGE:
     download-artifacts [PIPELINERUN] [OPTIONS]
@@ -151,32 +146,22 @@ format_pr_line() {
     printf "%2d) %-50s ${status_color}%-12s${NC} %s\n" "$idx" "$name" "$status" "$timestamp"
 }
 
-# Fetch PipelineRun JSON (handles both live and archive)
 fetch_pipelinerun() {
     local pr_name="$1"
-    if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
-        setup_kubearchive_host
-        kubectl ka get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
-    else
-        oc get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
-    fi
+    setup_kubearchive_host
+    kubectl ka get pipelinerun "$pr_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
 }
 
-# Fetch TaskRun JSON (handles both live and archive)
 fetch_taskrun() {
     local taskrun_name="$1"
-    if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
-        setup_kubearchive_host
-        kubectl ka get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
-    else
-        oc get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null || echo "{}"
-    fi
+    setup_kubearchive_host
+    kubectl ka get taskrun "$taskrun_name" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.items[0] // {}' || echo "{}"
 }
 
 # Check required tools
 check_tools() {
     local missing=()
-    for tool in oc kubectl tkn jq podman; do
+    for tool in oc kubectl jq podman; do
         command -v "$tool" &>/dev/null || missing+=("$tool")
     done
     if [[ ${#missing[@]} -gt 0 ]]; then
@@ -228,94 +213,34 @@ setup_kubearchive_host() {
     _KUBEARCHIVE_SETUP_DONE=1
 }
 
-# List recent PipelineRuns
 list_pipelineruns() {
-    info "Fetching recent PipelineRuns..."
-    local prs
-    prs=$(oc get pipelinerun -n "$NAMESPACE" -o json 2>/dev/null || echo "{}")
-
-    local live_count
-    live_count=$(echo "$prs" | jq -r '.items | length')
-
-    if [[ $live_count -eq 0 ]]; then
-        warn "No live PipelineRuns found in namespace $NAMESPACE"
-        info "Trying kubearchive for archived PipelineRuns..."
-        if ! try_kubearchive_list; then
-            error "No PipelineRuns found (live or archived)"
-            exit 1
-        fi
-        return
-    fi
-
-    echo ""
-    echo "Recent PipelineRuns:"
-    echo "-------------------"
-
-    local pr_data
-    pr_data=$(echo "$prs" | jq -r '.items | sort_by(.metadata.creationTimestamp) | reverse | .[0:20] | .[] |
-        "\(.metadata.name)|\(.status.conditions[0].reason // "Unknown")|\(.metadata.creationTimestamp)"')
-
-    local idx=1
-    declare -g -A PR_MAP
-    while IFS='|' read -r name status timestamp; do
-        PR_MAP[$idx]="$name"
-        format_pr_line "$idx" "$name" "$status" "$timestamp"
-        idx=$((idx + 1))
-    done <<< "$pr_data"
-
-    echo ""
-    read -rp "Select PipelineRun number (or 'a' to search archive): " selection
-
-    if [[ "$selection" == "a" ]] || [[ "$selection" == "archive" ]]; then
-        if ! try_kubearchive_list; then
-            error "Failed to retrieve archived PipelineRuns"
-            exit 1
-        fi
-        return
-    fi
-
-    if [[ ! "$selection" =~ ^[0-9]+$ ]] || [[ -z "${PR_MAP[$selection]:-}" ]]; then
-        error "Invalid selection"
-        exit 1
-    fi
-
-    PIPELINERUN="${PR_MAP[$selection]}"
-    USE_KUBEARCHIVE=false
-    success "Selected: $PIPELINERUN"
-}
-
-# Try listing PipelineRuns from kubearchive
-try_kubearchive_list() {
-    info "Searching kubearchive for PipelineRuns..."
-
-    # Set kubearchive host if not already set
+    info "Fetching PipelineRuns from kubearchive..."
     setup_kubearchive_host
 
     local archived_prs
     archived_prs=$(kubectl ka get pipelinerun -n "$NAMESPACE" --limit 50 -o json 2>/dev/null || echo "")
 
-    if [[ -z "$archived_prs" ]]; then
-        warn "No archived PipelineRuns found in kubearchive"
-        return 1
+    local pr_data=""
+    if [[ -n "$archived_prs" ]]; then
+        pr_data=$(echo "$archived_prs" | jq -r '.items[]? |
+            "\(.metadata.name)|\(.status.conditions[0]?.reason // "Unknown")|\(.metadata.creationTimestamp)"' 2>/dev/null || echo "")
     fi
-
-    echo ""
-    echo "Archived PipelineRuns (from kubearchive):"
-    echo "-----------------------------------------"
-
-    local pr_data
-    pr_data=$(echo "$archived_prs" | jq -r '.items[]? |
-        "\(.metadata.name)|\(.status.conditions[0]?.reason // "Unknown")|\(.metadata.creationTimestamp)"' 2>/dev/null || echo "")
 
     if [[ -z "$pr_data" ]]; then
-        warn "Could not parse archived PipelineRuns"
-        return 1
+        error "No PipelineRuns found in kubearchive for namespace $NAMESPACE"
+        exit 1
     fi
 
+    pr_data=$(echo "$pr_data" | sort -t'|' -k3 -r | head -20)
+
+    echo ""
+    echo "Recent PipelineRuns:"
+    echo "-------------------"
+
     local idx=1
-    unset PR_MAP
     declare -g -A PR_MAP
     while IFS='|' read -r name status timestamp; do
+        [[ -z "$name" ]] && continue
         PR_MAP[$idx]="$name"
         format_pr_line "$idx" "$name" "$status" "$timestamp"
         idx=$((idx + 1))
@@ -326,13 +251,11 @@ try_kubearchive_list() {
 
     if [[ ! "$selection" =~ ^[0-9]+$ ]] || [[ -z "${PR_MAP[$selection]:-}" ]]; then
         error "Invalid selection"
-        return 1
+        exit 1
     fi
 
     PIPELINERUN="${PR_MAP[$selection]}"
-    USE_KUBEARCHIVE=true
-    success "Selected (from archive): $PIPELINERUN"
-    return 0
+    success "Selected: $PIPELINERUN"
 }
 
 # Get PipelineRun details
@@ -342,32 +265,18 @@ get_pipelinerun_details() {
     PR_JSON=$(fetch_pipelinerun "$PIPELINERUN")
 
     if [[ $(echo "$PR_JSON" | jq -r '.metadata.name // empty') != "$PIPELINERUN" ]]; then
-        if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
-            error "PipelineRun '$PIPELINERUN' not found in kubearchive for namespace $NAMESPACE"
-            exit 1
-        fi
-        info "PipelineRun not found in live cluster, trying kubearchive..."
-        USE_KUBEARCHIVE=true
-        PR_JSON=$(fetch_pipelinerun "$PIPELINERUN")
-        if [[ $(echo "$PR_JSON" | jq -r '.metadata.name // empty') != "$PIPELINERUN" ]]; then
-            error "PipelineRun '$PIPELINERUN' not found in live cluster or kubearchive"
-            exit 1
-        fi
-        success "Found PipelineRun in kubearchive"
+        error "PipelineRun '$PIPELINERUN' not found"
+        exit 1
     fi
 
     local pr_status
     pr_status=$(echo "$PR_JSON" | jq -r '.status.conditions[0].reason // "Unknown"')
 
-    local running_count completed_count total_count
+    local completed_count total_count
     completed_count=$(echo "$PR_JSON" | jq -r '[.status.childReferences[]? | select(.kind == "TaskRun") | select(.pipelineTaskName != null)] | length')
     total_count=$(echo "$PR_JSON" | jq -r '[.spec.pipelineSpec.tasks[]?, .spec.pipelineSpec.finally[]?] | length')
 
-    if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
-        info "Pipeline status (archived): $pr_status ($completed_count/$total_count tasks completed)"
-    else
-        info "Pipeline status: $pr_status ($completed_count/$total_count tasks completed)"
-    fi
+    info "Pipeline status: $pr_status ($completed_count/$total_count tasks completed)"
 }
 
 # Get pull credentials for artifacts from ImageRepository
@@ -456,7 +365,7 @@ select_tasks() {
         taskrun_name=$(echo "$ref" | jq -r '.name')
         task_name=$(echo "$ref" | jq -r '.taskName')
 
-        # Get TaskRun status (from live cluster or kubearchive)
+        # Get TaskRun status
         local status
         local taskrun_json
         taskrun_json=$(fetch_taskrun "$taskrun_name")
@@ -651,51 +560,28 @@ download_task_logs() {
     local success_count=0
     local fail_count=0
 
-    if [[ "$USE_KUBEARCHIVE" == "true" ]]; then
-        # For archived TaskRuns, get container logs from kubearchive
-        # Each step runs in a container, get pod logs for each container
-        setup_kubearchive_host
+    local pod_name
+    pod_name=$(echo "$taskrun_json" | jq -r '.status.podName // empty')
 
-        # Get pod name from TaskRun
-        local pod_name
-        pod_name=$(echo "$taskrun_json" | jq -r '.status.podName // empty')
-
-        if [[ -z "$pod_name" ]]; then
-            warn "No pod name found in archived TaskRun"
-            return 1
-        fi
-
-        while read -r step_name; do
-            [[ -z "$step_name" ]] && continue
-
-            local log_file="$output_dir/${step_name}.log"
-            # Use kubectl ka logs to get container logs from archived pod
-            if kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "step-$step_name" > "$log_file" 2>/dev/null; then
-                success_count=$((success_count + 1))
-            else
-                # Try without "step-" prefix
-                if kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "$step_name" > "$log_file" 2>/dev/null; then
-                    success_count=$((success_count + 1))
-                else
-                    fail_count=$((fail_count + 1))
-                    rm -f "$log_file"
-                fi
-            fi
-        done <<< "$steps"
-    else
-        # For live TaskRuns, use tkn CLI
-        while read -r step_name; do
-            [[ -z "$step_name" ]] && continue
-
-            local log_file="$output_dir/${step_name}.log"
-            if tkn taskrun logs "$taskrun_name" -n "$NAMESPACE" -s "$step_name" > "$log_file" 2>/dev/null; then
-                success_count=$((success_count + 1))
-            else
-                fail_count=$((fail_count + 1))
-                rm -f "$log_file"
-            fi
-        done <<< "$steps"
+    if [[ -z "$pod_name" ]]; then
+        warn "No pod name found in TaskRun"
+        return 1
     fi
+
+    setup_kubearchive_host
+
+    while read -r step_name; do
+        [[ -z "$step_name" ]] && continue
+
+        local log_file="$output_dir/${step_name}.log"
+        if kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "step-$step_name" > "$log_file" 2>/dev/null ||
+           kubectl ka logs "pod/$pod_name" -n "$NAMESPACE" -c "$step_name" > "$log_file" 2>/dev/null; then
+            success_count=$((success_count + 1))
+        else
+            fail_count=$((fail_count + 1))
+            rm -f "$log_file"
+        fi
+    done <<< "$steps"
 
     if [[ $success_count -gt 0 ]]; then
         return 0

@@ -28,8 +28,7 @@ Download artifacts and logs from Konflux Tekton PipelineRuns, organizing them by
 
 Required tools (skill checks automatically on startup):
 - **oc** - Must be logged into cluster (`oc login <cluster>`)
-- **kubectl** with **ka** plugin - KubeArchive CLI for accessing archived PipelineRuns
-- **tkn** - Tekton CLI for log retrieval
+- **kubectl** with **ka** plugin - KubeArchive CLI for accessing PipelineRuns and logs
 - **jq** - JSON processor for parsing Kubernetes resources
 - **podman** - For downloading Trusted Artifacts from OCI registries
 
@@ -60,36 +59,23 @@ Verify logged into cluster:
 **If no PipelineRun specified**: List recent PipelineRuns
 
 ```bash
-# Fetch recent PipelineRuns from namespace
-kubectl get pipelinerun -n <namespace> -o json
+# Fetch from kubearchive first, supplement with live-only PipelineRuns
+kubectl ka get pipelinerun --namespace <namespace> --limit 50
+oc get pipelinerun -n <namespace> -o json
 
 # Display up to 20 most recent with:
 # - Name
 # - Status (Succeeded/Failed/Running)
 # - Creation timestamp
-
-# Let user select by number or type 'a' to search kubearchive
-
-# If no live PipelineRuns found, automatically try kubearchive (if installed):
-kubectl ka get pipelinerun --namespace <namespace> --limit 50
 ```
-
-**Kubearchive Support**:
-- If no live PipelineRuns exist, the skill automatically checks kubearchive (if available)
-- When selecting from live PipelineRuns, user can type 'a' or 'archive' to search archives instead
-- Archived PipelineRuns are retrieved via: `kubectl ka get pipelinerun --namespace <ns>`
-- All subsequent operations (TaskRun fetching, log download) work with archived resources
 
 ### Fetch PipelineRun Details
 
-Get full PipelineRun JSON to extract task information:
+Get full PipelineRun JSON (kubearchive first, live fallback):
 
 ```bash
-# From live cluster
-kubectl get pipelinerun <name> -n <namespace> -o json
-
-# OR from kubearchive (for archived PipelineRuns)
 kubectl ka get pipelinerun <name> --namespace <namespace>
+# falls back to: oc get pipelinerun <name> -n <namespace> -o json
 ```
 
 ### Parse TaskRuns
@@ -156,21 +142,10 @@ podman run --rm \
 
 #### 2. Download Logs
 
-Get per-step logs:
+Get per-step logs from kubearchive:
 
 ```bash
-# For live TaskRuns
-# Get step names from TaskRun
-kubectl get taskrun <name> -n <namespace> -o jsonpath='{.status.steps[*].name}'
-
-# Download each step's log
-tkn taskrun logs <taskrun-name> -n <namespace> -s <step-name> > <output>/<step-name>.log
-
-# For archived TaskRuns (from kubearchive)
-# Extract logs from .status.steps[].terminated.message field
-# Note: Archived logs may be limited compared to live logs retrieved via tkn
-kubectl ka get taskrun <name> --namespace <namespace> | \
-  jq -r '.status.steps[] | select(.name == "<step-name>") | .terminated.message'
+kubectl ka logs pod/<pod-name> -n <namespace> -c step-<step-name> > <output>/<step-name>.log
 ```
 
 ### Directory Structure
@@ -304,9 +279,6 @@ If PipelineRuns have been archived, install kubectl ka:
 # Search for archived PipelineRuns
 kubectl ka get pipelinerun --namespace <namespace>
 ```
-
-### "tkn not found"
-Install Tekton CLI: https://tekton.dev/docs/cli/
 
 ### "jq not found"
 Install jq: https://jqlang.github.io/jq/download/
