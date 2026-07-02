@@ -59,9 +59,8 @@ Verify logged into cluster:
 **If no PipelineRun specified**: List recent PipelineRuns
 
 ```bash
-# Fetch from kubearchive first, supplement with live-only PipelineRuns
+# Fetch PipelineRuns from kubearchive
 kubectl ka get pipelinerun --namespace <namespace> --limit 50
-oc get pipelinerun -n <namespace> -o json
 
 # Display up to 20 most recent with:
 # - Name
@@ -71,11 +70,10 @@ oc get pipelinerun -n <namespace> -o json
 
 ### Fetch PipelineRun Details
 
-Get full PipelineRun JSON (kubearchive first, live fallback):
+Get full PipelineRun JSON from kubearchive:
 
 ```bash
-kubectl ka get pipelinerun <name> --namespace <namespace>
-# falls back to: oc get pipelinerun <name> -n <namespace> -o json
+kubectl ka get pipelinerun <name> --namespace <namespace> -o json
 ```
 
 ### Parse TaskRuns
@@ -95,7 +93,7 @@ status:
 To get task status:
 
 1. Extract TaskRun names from `.status.childReferences[]`
-2. Fetch each TaskRun individually: `kubectl get taskrun <name> -o jsonpath='{.status.conditions[0].reason}'`
+2. Fetch each TaskRun individually: `kubectl ka get taskrun <name> -o json` and extract `.status.conditions[0].reason`
 3. Group by task name (handle retries by preferring Succeeded status)
 
 ### Display Tasks for Selection
@@ -125,7 +123,7 @@ For each selected task:
 Get TaskRun results to find artifact URIs:
 
 ```bash
-kubectl get taskrun <taskrun-name> -n <namespace> -o json
+kubectl ka get taskrun <taskrun-name> -n <namespace> -o json
 # Look in .status.results[] for entries where .name ends with "-artifact"
 # Extract .value (the OCI artifact URI)
 ```
@@ -239,7 +237,7 @@ Show simple progress during download:
 taskrun_name=$(echo "$pr_json" | jq -r '.status.childReferences[] | select(.pipelineTaskName == "my-task") | .name')
 
 # Fetch actual TaskRun to get status
-status=$(kubectl get taskrun "$taskrun_name" -o jsonpath='{.status.conditions[0].reason}')
+status=$(kubectl ka get taskrun "$taskrun_name" -o json | jq -r '.items[0].status.conditions[0].reason')
 ```
 
 ### Retry Handling
@@ -288,10 +286,14 @@ Install jq: https://jqlang.github.io/jq/download/
 2. Verify credentials are correct
 
 ### "Permission denied"
-Verify cluster access:
+Verify kubearchive and cluster access:
 ```bash
-oc auth can-i get pipelineruns -n <namespace>
-oc auth can-i get taskruns -n <namespace>
+# Test kubearchive connectivity
+kubectl ka get pipelinerun --namespace <namespace> --limit 1
+
+# Verify access for pull credentials (uses live cluster)
+oc auth can-i get imagerepositories -n <namespace>
+oc auth can-i get secrets -n <namespace>
 ```
 
 ## Script Location

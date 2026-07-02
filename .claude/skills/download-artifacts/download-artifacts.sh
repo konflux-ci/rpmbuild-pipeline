@@ -168,7 +168,10 @@ check_tools() {
         error "Missing required tools: ${missing[*]}  (dnf install ${missing[*]})"
         exit 1
     fi
-
+    if ! kubectl ka version &>/dev/null; then
+        error "kubectl ka plugin not installed — https://kubearchive.github.io/kubearchive/main/cli/installation.html"
+        exit 1
+    fi
 }
 
 # Check if logged in
@@ -357,6 +360,7 @@ select_tasks() {
     # Group by task name and select the best TaskRun for each task
     declare -g -A TASK_MAP
     declare -g -A TASKRUN_MAP
+    declare -g -A TASKRUN_JSON_CACHE
     declare -A TASK_STATUS_MAP
     declare -A TASK_TASKRUNS  # Tracks all TaskRuns per task name
 
@@ -365,10 +369,10 @@ select_tasks() {
         taskrun_name=$(echo "$ref" | jq -r '.name')
         task_name=$(echo "$ref" | jq -r '.taskName')
 
-        # Get TaskRun status
         local status
         local taskrun_json
         taskrun_json=$(fetch_taskrun "$taskrun_name")
+        TASKRUN_JSON_CACHE[$taskrun_name]="$taskrun_json"
         status=$(echo "$taskrun_json" | jq -r '.status.conditions[0]?.reason // "Unknown"')
 
         # Track this TaskRun for this task
@@ -504,7 +508,7 @@ download_artifact() {
 
     local auth_opts=()
     if [[ -n "$auth_file" ]]; then
-        auth_opts=(-v "$auth_file:/run/containers/0/auth.json:ro")
+        auth_opts=(-v "$auth_file:/home/notroot/.docker/config.json:z")
     fi
 
     error_log=$(mktemp)
@@ -533,15 +537,11 @@ download_artifact() {
 
 # Download task logs (per-step)
 download_task_logs() {
-    local task_name="$1"
-    local taskrun_name="$2"
+    local taskrun_name="$1"
+    local taskrun_json="$2"
     local output_dir="$3"
 
     mkdir -p "$output_dir"
-
-    # Get TaskRun details to find step names
-    local taskrun_json
-    taskrun_json=$(fetch_taskrun "$taskrun_name")
 
     if [[ $(echo "$taskrun_json" | jq -r '.metadata.name // empty') != "$taskrun_name" ]]; then
         warn "TaskRun '$taskrun_name' not found"
@@ -606,9 +606,7 @@ download_task() {
     local artifacts_success=false
     local logs_success=false
 
-    # Try to download artifacts
-    local taskrun_json
-    taskrun_json=$(fetch_taskrun "$taskrun_name")
+    local taskrun_json="${TASKRUN_JSON_CACHE[$taskrun_name]}"
 
     # Look for artifact results - get both name and value
     # Match result names ending with "artifact" or "-artifact" (case-insensitive)
@@ -632,7 +630,7 @@ download_task() {
     fi
 
     # Always download logs
-    if download_task_logs "$task_name" "$taskrun_name" "$task_dir"; then
+    if download_task_logs "$taskrun_name" "$taskrun_json" "$task_dir"; then
         logs_success=true
     fi
 
