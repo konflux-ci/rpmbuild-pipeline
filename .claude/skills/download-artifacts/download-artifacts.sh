@@ -21,6 +21,7 @@ trap _global_cleanup EXIT
 NAMESPACE=""
 OUTPUT_DIR="."
 PIPELINERUN=""
+TASKS=""
 SHOW_HELP=false
 
 # Parse arguments
@@ -38,6 +39,11 @@ while [[ $# -gt 0 ]]; do
         --output-dir|-o)
             [[ $# -lt 2 ]] && { echo -e "${RED}Error: $1 requires a value${NC}"; exit 1; }
             OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --tasks|-t)
+            [[ $# -lt 2 ]] && { echo -e "${RED}Error: $1 requires a value${NC}"; exit 1; }
+            TASKS="$2"
             shift 2
             ;;
         --*)
@@ -84,6 +90,7 @@ ARGUMENTS:
 OPTIONS:
     -n, --namespace NS   Kubernetes namespace (default: current context namespace)
     -o, --output-dir DIR Output directory (default: current directory)
+    -t, --tasks TASKS    Task selection (comma-separated numbers or 'all')
     -h, --help           Show this help message
 
 EXAMPLES:
@@ -98,6 +105,11 @@ EXAMPLES:
 
     # Short flags
     /download-artifacts my-build-run -n my-tenant -o ./artifacts
+
+    # Non-interactive with task selection
+    /download-artifacts my-build-run --tasks 17
+    /download-artifacts my-build-run -t 1,3,5
+    /download-artifacts my-build-run -t all
 
 AUTHENTICATION:
     You must be logged into the cluster before running this skill:
@@ -431,11 +443,15 @@ select_tasks() {
         idx=$((idx + 1))
     done
 
-    echo ""
-    echo "Enter task numbers (comma-separated, e.g., '1,3,5' or 'all'):"
-    read -rp "> " selection
-
     declare -g -a SELECTED_TASKS
+    local selection="$TASKS"
+
+    # If no tasks specified, prompt user
+    if [[ -z "$selection" ]]; then
+        echo ""
+        echo "Enter task numbers (comma-separated, e.g., '1,3,5' or 'all'):"
+        read -rp "> " selection
+    fi
 
     if [[ "$selection" == "all" ]]; then
         for i in "${!TASK_MAP[@]}"; do

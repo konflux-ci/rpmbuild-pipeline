@@ -32,6 +32,62 @@ Required tools (skill checks automatically on startup):
 - **jq** - JSON processor for parsing Kubernetes resources
 - **podman** - For downloading Trusted Artifacts from OCI registries
 
+## How Claude Should Use This Skill
+
+**IMPORTANT**: When invoking this skill from Claude, you must:
+
+1. **Use the Skill tool** (preferred method):
+   ```
+   Skill tool with: skill="download-artifacts", args="<pipelinerun-name> --tasks <selection>"
+   ```
+
+2. **Or use absolute path with Bash tool**:
+   ```bash
+   bash /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts/download-artifacts.sh <pipelinerun-name> --tasks 17
+   ```
+
+3. **Or change directory first** (requires parentheses for subshell):
+   ```bash
+   (cd /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts && bash download-artifacts.sh <pipelinerun-name> --tasks 17)
+   ```
+
+**Non-interactive mode**: ALWAYS use the `--tasks` flag to avoid blocking on interactive prompts:
+
+```bash
+# Download specific task
+bash /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts/download-artifacts.sh <pipelinerun-name> --tasks 17
+
+# Download multiple tasks  
+bash /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts/download-artifacts.sh <pipelinerun-name> --tasks 1,3,5
+
+# Download all tasks
+bash /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts/download-artifacts.sh <pipelinerun-name> --tasks all
+```
+
+Without `--tasks`, the script will block waiting for stdin input.
+
+### Common Mistakes to Avoid
+
+❌ **WRONG** - cd doesn't persist:
+```bash
+cd /path && bash script.sh  # bash runs in original directory!
+```
+
+❌ **WRONG** - relative path from wrong directory:
+```bash
+bash download-artifacts.sh  # won't find script unless already in that directory
+```
+
+✅ **CORRECT** - use absolute path:
+```bash
+bash /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts/download-artifacts.sh
+```
+
+✅ **CORRECT** - use subshell:
+```bash
+(cd /mnt/rpmbuild-pipeline/.claude/skills/download-artifacts && bash download-artifacts.sh)
+```
+
 ## Instructions for Agent
 
 ### Tool Verification
@@ -220,6 +276,13 @@ Show simple progress during download:
 ### Short flags
 ```bash
 /download-artifacts my-run -n my-namespace -o ./artifacts
+```
+
+### Non-interactive mode (pre-select tasks)
+```bash
+/download-artifacts my-run --tasks 17
+/download-artifacts my-run -t 1,3,5
+/download-artifacts my-run -t all
 ```
 
 ## Implementation Notes
