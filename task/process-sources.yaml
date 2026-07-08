@@ -100,6 +100,12 @@ spec:
           type: string
         build-i686:
           type: string
+        deps-noarch:
+          type: string
+        build-noarch:
+          type: string
+        noarch-platform-arch:
+          type: string
   stepTemplate:
     imagePullPolicy: IfNotPresent
     volumeMounts:
