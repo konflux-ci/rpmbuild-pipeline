@@ -28,10 +28,12 @@ graph TD
   get_sources --> nosrpm_a[calculate-deps-x86_64]:::ARCH
   get_sources --> nosrpm_b[calculate-deps-aarch64]:::ARCH
   get_sources --> nosrpm_c[calculate-deps ...]:::ARCH
+  get_sources --> nosrpm_n[calculate-deps-noarch]:::NOARCH
 
   prepare_mock_config --> nosrpm_a
   prepare_mock_config --> nosrpm_b
   prepare_mock_config --> nosrpm_c
+  prepare_mock_config --> nosrpm_n
 
   nosrpm_a --> prefetch_a[Prefetch x86_64.
     Download BuildRequires.
@@ -45,19 +47,35 @@ graph TD
   nosrpm_c --> prefetch_c[Prefetch ...]
   prefetch_c --> build_c[rpmbuild ...]:::ARCH
 
+  nosrpm_n --> prefetch_n[Prefetch noarch.]
+  prefetch_n --> build_n[rpmbuild-noarch]:::NOARCH
+
   build_a --> Upload[upload-to-quay]
   build_b --> Upload
   build_c --> Upload
+  build_n --> Upload
 
-  Upload --> check_noarch[check-noarch]
+  build_a --> check_noarch[check-noarch]
+  build_b --> check_noarch
+  build_c --> check_noarch
+  build_n --> check_noarch
 
   classDef ARCH fill:yellow
+  classDef NOARCH fill:lightgreen
 ```
 
 The yellow boxes represent architecture-specific tasks.  This means that, for
 example, `rpmbuild-x86_64` Task must be executed in a native `x86_64`
 environment.  Konflux needs to allocate a virtual machine for this task
 using [MPC][].
+
+The green boxes represent noarch tasks.  When a spec file has
+`BuildArch: noarch`, the pipeline enables a dedicated noarch task pair
+(`calculate-deps-noarch` / `rpmbuild-noarch`).  The noarch build runs on a
+real architecture VM—selected deterministically by `select_architectures.py`
+(preferring x86_64)—but produces architecture-independent RPMs.  The
+`mock-arch-override` task parameter carries the chosen real architecture so
+Mock receives a valid `@ARCH@` value in its configuration template.
 
 
 ## Steps
@@ -86,24 +104,29 @@ using [MPC][].
       Mock configuration template file.  The template is architecture-agnostic;
       tasks that use this template need to instantiate it with their own
       architecture string (e.g., `s/@ARCH@/x86_64/`).
-- **calculate-deps-&lt;ARCH&gt; (Mock)**
+- **calculate-deps-&lt;ARCH&gt; / calculate-deps-noarch (Mock)**
     - This step **is not** [hermetic][].  However, it is necessary in order to
       build hermetically in the subsequent **rpmbuild-&lt;ARCH&gt;** step.
     - This step is architecture-specific (executed multiple times, for each
-      selected architecture).
+      selected architecture, plus once for noarch when applicable).
     - Starts `rpmbuild` (via Mock) to extract sources and calculate dynamic build
       requirements (see [%generate_buildrequires][]).
     - Generates a lockfile listing the required RPMs to be downloaded.
     - The lockfile is one of the sources artifacts used for producing SBOM.
+    - For noarch, the `mock-arch-override` parameter substitutes the real
+      architecture into the Mock config template instead of "noarch".
 - **prefetch &lt;ARCH&gt;**
     - Downloads RPMs (BuildRequires) listed in the lockfile to prepare a local,
       "offline" RPM repository.
     - **TODO**: While this step is not architecture-specific, it's currently
       "bundled" into the previous `calculate-deps-*` Task and should be
       separated (see progress on [issue#48][]).
-- **rpmbuild-&lt;ARCH&gt; (Mock)**
+- **rpmbuild-&lt;ARCH&gt; / rpmbuild-noarch (Mock)**
     - This step **is** [hermetic][].
     - Produces a list of "binary" RPMs (built artifacts).
+    - The noarch variant builds architecture-independent packages on a
+      deterministically chosen platform (see `NOARCH_PLATFORM_PRIORITY` in
+      `select_architectures.py`).
 - **upload-to-quay**
     - Collects all built artifacts from previous steps and uploads them to
       OCI registry (the destination is selected by the user as a pipeline
