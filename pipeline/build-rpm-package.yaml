@@ -104,7 +104,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:8c18a82873ff1b358295d9373d94822923f660929275fd84899ea067dfa81572
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:713c3f5b3768d9d981cba392901f89efa1655313564a66f7c22619dfbfd8c78e
       type: string
     - name: ociStorage
       description: |
