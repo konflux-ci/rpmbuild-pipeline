@@ -65,17 +65,17 @@ spec:
         name: workdir
   steps:
     - name: use-trusted-artifact-source
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:09c323a74915b57c3eeb28114820d0842e94779dec66bd9f645c959c5b2ea730
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
     - name: use-trusted-artifact-results
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:09c323a74915b57c3eeb28114820d0842e94779dec66bd9f645c959c5b2ea730
       args:
         - use
         - $(params.calculation-artifact)=/var/workdir/results
     - name: use-trusted-artifact-mock-config
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:09c323a74915b57c3eeb28114820d0842e94779dec66bd9f645c959c5b2ea730
       args:
         - use
         - $(params.mock-config-template-file)=/var/workdir/mock-config
@@ -307,7 +307,7 @@ spec:
           syft "$rpm_dir" -o spdx-json > "results/$(params.arch)/$rpm_nvra.sbom.json"
         done
     - name: create-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:09c323a74915b57c3eeb28114820d0842e94779dec66bd9f645c959c5b2ea730
       args:
         - create
         - --store
