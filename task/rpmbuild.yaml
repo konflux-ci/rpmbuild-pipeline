@@ -46,6 +46,13 @@ spec:
     - name: ociArtifactExpiresAfter
       description: How long Trusted Artifacts should be retained
       type: string
+    - name: mock-arch-override
+      description: |
+        Override architecture for Mock config @ARCH@ substitution.  Used for
+        noarch builds where the build runs on a real architecture but arch
+        param is "noarch".  Empty means use the arch param as-is.
+      type: string
+      default: ""
     - name: specfile
       description: |
         Name of specfile when specfile doesn't have the same prefix name as package name.
@@ -180,7 +187,9 @@ spec:
                   --sources /source --resultdir /results \
           || success=false
         else
-          if [ $(params.arch) == "i686" ] ; then
+          if [ -n "$(params.mock-arch-override)" ]; then
+            mock_arch=$(params.mock-arch-override)
+          elif [ $(params.arch) == "i686" ] ; then
             mock_arch=i386
           else
             mock_arch=$(params.arch)
