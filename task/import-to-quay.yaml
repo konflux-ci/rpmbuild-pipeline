@@ -17,6 +17,8 @@ spec:
       type: string
     - name: ociStorage
       type: string
+    - name: ociArtifactExpiresAfter
+      type: string
     - description: The name of the package we build
       name: package-name
       type: string
@@ -156,7 +158,7 @@ spec:
         oras push \
              --registry-config "$HOME/auth.json" \
              --artifact-type application/vnd.rpm.build.v0 \
-             --annotation quay.expires-after=14d \
+             --annotation quay.expires-after=$(params.ociArtifactExpiresAfter)\
              $IMAGE_URL \
              `cat ../oras-push-list.txt` | tee /tmp/oras.log
 
