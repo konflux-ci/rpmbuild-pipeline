@@ -63,6 +63,9 @@ spec:
       description: Use per-architecture Pulp repositories instead of per-build repos
       type: string
       default: "false"
+    - name: image-expires-after
+      description: How long final artifact live in quay
+      default: "14d"
   results:
     - name: IMAGE_URL
       description: Location of build artifact
@@ -148,7 +151,7 @@ spec:
         oras push \
              --registry-config "$HOME/auth.json" \
              --artifact-type application/vnd.rpm.build.v0 \
-             --annotation quay.expires-after=14d \
+             --annotation quay.expires-after=$(params.image-expires-after)\
              $IMAGE_URL \
              `cat ../oras-push-list.txt` | tee /tmp/oras.log
 

@@ -779,6 +779,8 @@ spec:
           value: $(params.purl-rpm-namespace)
         - name: pulp-target-arch-repo
           value: $(params.pulp-target-arch-repo)
+        - name: image-expires-after
+          value: $(params.image-expires-after)
       runAfter:
         - rpmbuild-s390
         - rpmbuild-s390x
