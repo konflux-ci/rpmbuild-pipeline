@@ -106,6 +106,10 @@ spec:
       name: script-environment-image
       default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:713c3f5b3768d9d981cba392901f89efa1655313564a66f7c22619dfbfd8c78e
       type: string
+    - name: image-expires-after
+      default: 14d
+      description: |
+        Resulting image / snapshot will disappear (if not released) with this delay.
     - name: ociStorage
       description: |
         OCI registry URL where the pipeline stores trusted artifacts, including
@@ -775,6 +779,8 @@ spec:
           value: $(params.purl-rpm-namespace)
         - name: pulp-target-arch-repo
           value: $(params.pulp-target-arch-repo)
+        - name: image-expires-after
+          value: $(params.image-expires-after)
       runAfter:
         - rpmbuild-s390
         - rpmbuild-s390x
