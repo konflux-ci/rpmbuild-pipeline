@@ -747,6 +747,8 @@ spec:
       params:
         - name: ociStorage
           value: $(params.ociStorage).built-artifacts
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
         - name: git-url
           value: $(params.git-url)
         - name: revision
