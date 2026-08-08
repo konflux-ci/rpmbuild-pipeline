@@ -70,7 +70,7 @@ spec:
         - use
         - $(params.ppc64le-artifact)=/var/workdir/results
     - name: use-trusted-artifact-noarch
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:69c9537ec111c5333ef3351e6afbe5e9ab76bc416057f2fe6675895f73c25239
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:0fa7f2a5cd87d6d47ac5dbedc81687805c8e6bc24c6aca620242e9134eed9633
       args:
         - use
         - $(params.noarch-artifact)=/var/workdir/results
