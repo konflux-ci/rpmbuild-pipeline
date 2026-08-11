@@ -1,0 +1,38 @@
+name: Checkton
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-tekton-scripts:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Differential checkton requires full git history
+          fetch-depth: 0
+
+      - name: Run Checkton
+        id: checkton
+        uses: chmeliik/checkton@c24110a11ba3d4acb90964be57fc1177fed2918f  # v0.4.0
+        with:
+          # Match Tekton YAML files in pipeline/, task/, and .tekton/ directories
+          include-regex: '^(pipeline|task|\.tekton)/.*\.ya?ml$'
+          # Differential mode (default) - only report new violations in PRs
+          differential: true
+          # Let GitHub Code Scanning handle the reporting
+          fail-on-findings: false
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.checkton.outputs.sarif }}
+          category: checkton
