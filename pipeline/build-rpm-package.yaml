@@ -42,7 +42,7 @@ spec:
         resolver: bundles
   params:
     - name: package-name
-      description: The name of the package we want to build
+      description: The name of the package we want to build CHANGE
     - description: Source Repository URL
       name: git-url
       type: string
