@@ -138,7 +138,7 @@ spec:
         echo "Gathered `ls oras-staging | wc -l` files for upload"
 
     - name: push-to-quay-select-auth
-      image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+      image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
       script: |
         #!/usr/bin/env bash
         set -e
@@ -192,7 +192,7 @@ spec:
         fi
         merge_sboms.py "${ARGS[@]}"
     - name: show-sbom
-      image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+      image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/usr/bin/env bash
@@ -228,7 +228,7 @@ spec:
           readOnly: true
           name: pulp-access-credentials
     - name: upload-sbom-to-quay
-      image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+      image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
       script: |
         #!/usr/bin/env bash
         cosign \
@@ -238,7 +238,7 @@ spec:
          $(cat $(results.IMAGE_URL.path))@$(cat $(results.IMAGE_DIGEST.path))
       workingDir: /var/workdir
     - name: report-sbom-url
-      image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+      image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
       workingDir: /var/workdir/results/oras-staging
       script: |
         #!/usr/bin/env bash
