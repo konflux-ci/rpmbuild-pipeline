@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   lint-tekton-scripts:
@@ -26,8 +27,8 @@ jobs:
         with:
           # Match Tekton YAML files in pipeline/, task/, and .tekton/ directories
           include-regex: '^(pipeline|task|\.tekton)/.*\.ya?ml$'
-          # Differential mode (default) - only report new violations in PRs
-          differential: true
+          # Differential in PRs (only new violations), full scan on manual dispatch
+          differential: ${{ github.event_name == 'pull_request' }}
           # Let GitHub Code Scanning handle the reporting
           fail-on-findings: false
 
