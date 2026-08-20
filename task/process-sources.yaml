@@ -123,6 +123,7 @@ spec:
     - name: download
       image: $(params.script-environment-image)
       script: |
+        #!/usr/bin/env bash
         set -ex
         cd "/var/workdir/source/${MONOREPO_SUBDIR}"
 
