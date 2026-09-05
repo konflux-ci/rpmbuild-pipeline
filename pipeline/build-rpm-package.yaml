@@ -110,7 +110,7 @@ spec:
       description: |
         OCI registry URL where the pipeline stores trusted artifacts, including
         both resulting artifacts and intermediary by-products.
-      default: quay.io/redhat-user-workloads/$(context.taskRun.namespace)/$(params.package-name)
+      default: quay.io/redhat-user-workloads/$(context.pipelineRun.name)
     - description: |
         Name of specfile when specfile doesn't have the same prefix name as package name.
         Default is null and package-name.spec is used.
