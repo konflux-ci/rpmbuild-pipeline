@@ -9,37 +9,6 @@ metadata:
     pipelines.appstudio.openshift.io/type: build
     appstudio.openshift.io/application: rpms
 spec:
-  finally:
-    - name: show-summary
-      params:
-        - name: pipelinerun-name
-          value: $(context.pipelineRun.name)
-        - name: git-url
-          value: $(tasks.clone-repository.results.url)?rev=$(tasks.clone-repository.results.commit)
-        - name: image-url
-          value: $(tasks.upload-to-quay.results.IMAGE_URL)
-      taskRef:
-        params:
-          - name: name
-            value: summary
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-summary:0.2@sha256:e1b8e42962b0c6d9ebe95f3709c34ae5e1569b73941a79654248e0af55eb3ff9
-          - name: kind
-            value: task
-        resolver: bundles
-    - name: show-sbom
-      params:
-        - name: IMAGE_URL
-          value: $(tasks.upload-to-quay.results.IMAGE_URL)
-      taskRef:
-        params:
-          - name: name
-            value: show-sbom
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-show-sbom:0.1@sha256:a7346ed61237db4f82ff782e0c9e8b30536e0e67b907ad600341a6d192e80012
-          - name: kind
-            value: task
-        resolver: bundles
   params:
     - name: package-name
       description: The name of the package we want to build
@@ -240,7 +209,7 @@ spec:
           - name: name
             value: git-clone-oci-ta
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:d30f13dd15daf89dd6dc645243b3444d35570d13f7840c3fd65e366022515205
+            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2@sha256:e5ba1f8549e6a0f043629ef00bea7511957121e05304b688f40ff12304560f38
           - name: kind
             value: task
         resolver: bundles
