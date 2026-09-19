@@ -62,12 +62,12 @@ spec:
         name: workdir
   steps:
     - name: use-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:bbd95369ff4ac867a05c9343aeed044c9174f21ce62bca017561bc486a68ad23
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
     - name: use-trusted-artifact-mock-config
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:bbd95369ff4ac867a05c9343aeed044c9174f21ce62bca017561bc486a68ad23
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
       args:
         - use
         - $(params.mock-config-template-file)=/var/workdir/mock-config
@@ -202,7 +202,7 @@ spec:
         requests:
           ephemeral-storage: 5Gi
     - name: create-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:bbd95369ff4ac867a05c9343aeed044c9174f21ce62bca017561bc486a68ad23
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
       args:
         - create
         - --store
