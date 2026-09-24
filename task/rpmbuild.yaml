@@ -71,20 +71,12 @@ spec:
       - mountPath: /var/workdir
         name: workdir
   steps:
-    - name: use-trusted-artifact-source
+    - name: use-trusted-artifacts
       image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
-    - name: use-trusted-artifact-results
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
-      args:
-        - use
         - $(params.calculation-artifact)=/var/workdir/results
-    - name: use-trusted-artifact-mock-config
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
-      args:
-        - use
         - $(params.mock-config-template-file)=/var/workdir/mock-config
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
