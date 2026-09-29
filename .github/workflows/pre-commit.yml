@@ -1,0 +1,26 @@
+---
+name: pre-commit
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/redhat-artifact-storage/pre-commit-image@sha256:324e1d94ce13b5b86b1e847b8c972ce0199cbe46d63ebc1798254153bcba242a
+
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.1
+        env:
+          SKIP: shellcheck,pylint
+        with:
+          extra_args: --from-ref origin/main --to-ref HEAD

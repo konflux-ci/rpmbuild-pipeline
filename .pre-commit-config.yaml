@@ -1,0 +1,42 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        description: Shell script analysis tool
+        types: [shell]
+        exclude: ^\.claude/
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.conf]
+  - repo: local
+    hooks:
+      - id: tekton-lint
+        name: tekton-lint
+        description: Linter for Tekton resource definitions
+        entry: bash -c 'npx --yes @ibm/tekton-lint@1.2.0 "$@"' --
+        language: system
+        files: '^(pipeline|task|\.tekton)/.*\.ya?ml$'
+        pass_filenames: true
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 44.53.0
+    hooks:
+      - id: renovate-config-validator
