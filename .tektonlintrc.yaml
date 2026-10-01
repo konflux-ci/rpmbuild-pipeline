@@ -1,0 +1,38 @@
+---
+# tekton-lint configuration
+# Note: tekton-lint v1.2.4 does not support Tekton resolvers (git, bundles)
+# so we disable no-missing-resource to avoid false errors on resolver-based task references
+
+rules: # error | warning | off
+  # Error detection rules
+  no-duplicate-param: error
+  no-invalid-name: error
+  no-invalid-param-type: error
+  no-pipeline-missing-parameters: error
+  no-pipeline-missing-task: error
+  no-pipeline-task-cycle: error
+  no-extra-param: error
+  no-missing-workspace: error
+  no-undefined-result: error
+  no-missing-param: error
+  no-duplicate-resource: error
+  no-resourceversion: error
+  no-duplicate-env: error
+  no-undefined-volume: error
+  no-undefined-param: error
+
+  # Disabled due to resolver incompatibility
+  # tekton-lint cannot parse resolver-based taskRefs (resolver: git/bundles)
+  no-missing-resource: off
+
+  # Best practice warnings
+  no-latest-image: warning
+  prefer-beta: warning
+  prefer-kebab-case: warning
+  no-unused-param: warning
+  prefer-when-expression: warning
+  no-deprecated-resource: warning
+  no-missing-hashbang: warning
+
+  # Disabled rules
+  prefer-camel-kebab-case: off
