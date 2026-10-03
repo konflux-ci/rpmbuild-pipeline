@@ -62,7 +62,7 @@ spec:
         name: workdir
   steps:
     - name: use-trusted-artifacts
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:d4155ab6553b406bd5ab96b98bb10ab97a38a6f9dcb7c39dd18678428e8b2e64
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:77695f25dc63ae65760601ca60da23aa241ac9b05fd03b449539d4bc038237b9
       args:
         - use
         - $(params.dependencies-artifact)=/var/workdir/source
@@ -198,7 +198,7 @@ spec:
         requests:
           ephemeral-storage: 5Gi
     - name: create-trusted-artifact
-      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:462c2474e67bd752592678058801b0d27a5ea4852b70e829e3e6c245bdeea348
+      image: quay.io/konflux-ci/build-trusted-artifacts@sha256:77695f25dc63ae65760601ca60da23aa241ac9b05fd03b449539d4bc038237b9
       args:
         - create
         - --store
