@@ -37,6 +37,6 @@ repos:
         files: '^(pipeline|task|\.tekton)/.*\.ya?ml$'
         pass_filenames: true
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 44.53.0
+    rev: 44.121.4
     hooks:
       - id: renovate-config-validator
