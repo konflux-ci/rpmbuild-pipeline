@@ -10,7 +10,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     container:
-      image: quay.io/redhat-artifact-storage/pre-commit-image@sha256:324e1d94ce13b5b86b1e847b8c972ce0199cbe46d63ebc1798254153bcba242a
+      image: quay.io/redhat-artifact-storage/pre-commit-image@sha256:a2c720a39bd9f0fe3301c79a1aa16ebc2f3705a18663e7812e8eac94d8fd62a2
 
     steps:
       - name: Repository checkout
