@@ -305,7 +305,7 @@ spec:
           [ -d "$rpm_dir" ] || continue
           rpm_nvra=$(basename "$rpm_dir")
           echo "Scanning $rpm_dir"
-          syft "$rpm_dir" -o spdx-json > "results/$(params.arch)/$rpm_nvra.sbom.json"
+          syft "$rpm_dir" --select-catalogers +javascript-package-cataloger -o spdx-json > "results/$(params.arch)/$rpm_nvra.sbom.json"
         done
     - name: create-trusted-artifact
       image: quay.io/konflux-ci/build-trusted-artifacts@sha256:b60c24ccd6df949b905739b36f4664a5a7571ca0d15436b1798612c485d7970b
