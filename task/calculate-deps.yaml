@@ -114,6 +114,11 @@ spec:
         fi
         # Instantiate the given Mock config template for our architecture.
         sed "s|@ARCH@|$mock_arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
+        # Keep i386 for repository URLs and mock-core-configs profile names,
+        # but build i686 RPMs even when using a custom Mock template.
+        if [ "$(params.arch)" = "i686" ] && [ -z "$(params.mock-arch-override)" ]; then
+          printf "\nconfig_opts['target_arch'] = 'i686'\n" >> "$workdir/mock.cfg"
+        fi
         send "$workdir/mock.cfg" "$HOMEDIR/mock.cfg"
 
         # Allow mockbuilder (group mock) to read sources, and write results
