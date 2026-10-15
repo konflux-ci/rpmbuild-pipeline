@@ -263,6 +263,11 @@ spec:
           readOnly: true
     - name: extract-rpms
       image: $(params.script-environment-image)
+      computeResources:
+        requests:
+          memory: "4Gi"
+        limits:
+          memory: "8Gi"
       workingDir: /var/workdir
       script: |
         #!/usr/bin/env bash
@@ -309,6 +314,11 @@ spec:
 
     - name: run-syft
       image: registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.29.0@sha256:dc0da6b4448428e625271b542cc029ab03de92f75ea50d6d63b1d088d20bbd28
+      computeResources:
+        requests:
+          memory: "4Gi"
+        limits:
+          memory: "8Gi"
       workingDir: /var/workdir
       script: |
         #!/usr/bin/env bash
