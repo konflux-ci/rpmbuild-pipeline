@@ -69,6 +69,14 @@ example, `rpmbuild-x86_64` Task must be executed in a native `x86_64`
 environment.  Konflux needs to allocate a virtual machine for this task
 using [MPC][].
 
+The pipeline also provides optional `riscv64` tasks. To enable them, add
+`riscv64` to `build-architectures`. This requires a native MPC worker for
+`linux/riscv64` (or an available label specified in `build-platforms`), a
+`script-environment-image` with a riscv64 variant, and a matching Mock chroot
+or custom Mock configuration template. The default architecture list is
+unchanged. The riscv64 build results participate in artifact upload and
+noarch RPM comparison alongside the other architectures.
+
 The green boxes represent noarch tasks.  When a spec file has
 `BuildArch: noarch`, the pipeline enables a dedicated noarch task pair
 (`calculate-deps-noarch` / `rpmbuild-noarch`).  The noarch build runs on a
@@ -133,7 +141,7 @@ Mock receives a valid `@ARCH@` value in its configuration template.
       parameter).
     - If config for [pulp cli][] is setup as a secret using pulp-config secret name,
       Pulp will upload RPMs, logs, and SBOM to a configured pulp domain.
-      In the secert will need to be a file called oauth-cli.toml. This will need to contain
+      In the secret will need to be a file called oauth-cli.toml. This will need to contain
       the pulp config toml. It accepts either certs or oauth. If using certs to do
       authentication, the certs will need to be included in the secret.
 - **check-noarch**

@@ -86,6 +86,8 @@ spec:
           type: string
         deps-aarch64:
           type: string
+        deps-riscv64:
+          type: string
         deps-i686:
           type: string
         build-ppc64le:
@@ -97,6 +99,8 @@ spec:
         build-s390x:
           type: string
         build-aarch64:
+          type: string
+        build-riscv64:
           type: string
         build-i686:
           type: string

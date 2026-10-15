@@ -496,6 +496,78 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/rpmbuild.yaml
+    - name: calculate-deps-riscv64
+      runAfter:
+        - process-sources
+        - prepare-mock-config
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-riscv64)
+        - name: arch
+          value: riscv64
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).calculation-riscv64
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/calculate-deps.yaml
+    - name: rpmbuild-riscv64
+      runAfter:
+        - calculate-deps-riscv64
+      timeout: "72h"
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-riscv64)
+        - name: arch
+          value: riscv64
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: hermetic
+          value: $(params.hermetic)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: calculation-artifact
+          value: $(tasks.calculate-deps-riscv64.results.calculation-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmbuild-riscv64
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/rpmbuild.yaml
     - name: calculate-deps-s390x
       runAfter:
         - process-sources
@@ -810,6 +882,8 @@ spec:
           value: $(tasks.rpmbuild-i686.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: riscv64-artifact
+          value: $(tasks.rpmbuild-riscv64.results.rpmbuild-artifact)
         - name: s390-artifact
           value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
@@ -830,6 +904,7 @@ spec:
         - rpmbuild-x86-64
         - rpmbuild-i686
         - rpmbuild-aarch64
+        - rpmbuild-riscv64
         - rpmbuild-ppc64le
         - rpmbuild-noarch
       taskRef:
@@ -848,6 +923,7 @@ spec:
         - rpmbuild-x86-64
         - rpmbuild-i686
         - rpmbuild-aarch64
+        - rpmbuild-riscv64
         - rpmbuild-ppc64le
         - rpmbuild-noarch
       params:
@@ -857,6 +933,8 @@ spec:
           value: $(tasks.rpmbuild-x86-64.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: riscv64-artifact
+          value: $(tasks.rpmbuild-riscv64.results.rpmbuild-artifact)
         - name: s390-artifact
           value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
