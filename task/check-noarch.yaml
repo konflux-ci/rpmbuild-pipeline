@@ -18,6 +18,9 @@ spec:
     - description: The Trusted Artifact URI pointing to the aarch64 build output
       name: aarch64-artifact
       type: string
+    - description: The Trusted Artifact URI pointing to the riscv64 build output
+      name: riscv64-artifact
+      type: string
     - description: The Trusted Artifact URI pointing to the s390 build output
       name: s390-artifact
       type: string
@@ -46,6 +49,7 @@ spec:
         - $(params.i686-artifact)=/var/workdir/results
         - $(params.x86_64-artifact)=/var/workdir/results
         - $(params.aarch64-artifact)=/var/workdir/results
+        - $(params.riscv64-artifact)=/var/workdir/results
         - $(params.s390-artifact)=/var/workdir/results
         - $(params.s390x-artifact)=/var/workdir/results
         - $(params.ppc64le-artifact)=/var/workdir/results
