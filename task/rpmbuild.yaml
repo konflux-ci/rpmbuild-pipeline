@@ -257,6 +257,15 @@ spec:
           receive "$HOMEDIR/results/ancestors.json" "$resultdir/results/ancestors.json"
           cat "$resultdir/results/ancestors.json"
         fi
+
+        # Remove buildroot_repo from the results directory before archiving into
+        # the trusted artifact. The hermetic build consumes it but
+        # import-to-quay never reads it, and it occupies hundreds of MBs per arch.
+        # Keep buildroot_lock.json — gather_rpms.py and merge_sboms.py both need it.
+        if [ -d "$resultdir/results/buildroot_repo" ]; then
+          echo "Removing buildroot_repo ($(du -sh "$resultdir/results/buildroot_repo" | cut -f1)) to shrink artifact"
+          rm -rf "$resultdir/results/buildroot_repo"
+        fi
       volumeMounts:
         - mountPath: /ssh
           name: ssh
