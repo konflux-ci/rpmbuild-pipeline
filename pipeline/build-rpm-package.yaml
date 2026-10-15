@@ -131,6 +131,13 @@ spec:
       description: Use per-architecture Pulp repositories for stable DNF-consumable URLs
       type: string
       default: "false"
+    - name: custom-user-metadata
+      description: |
+        JSON object (string) stored verbatim in the Koji build metadata under
+        extra.custom_user_metadata. Free-form; the pipeline does not interpret
+        the keys. Must be a JSON object or empty.
+      type: string
+      default: ""
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -824,6 +831,8 @@ spec:
           value: $(params.purl-rpm-namespace)
         - name: pulp-target-arch-repo
           value: $(params.pulp-target-arch-repo)
+        - name: custom-user-metadata
+          value: $(params.custom-user-metadata)
       runAfter:
         - rpmbuild-s390
         - rpmbuild-s390x

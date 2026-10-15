@@ -18,6 +18,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | ""                                  |
 | ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
 | target-distribution | Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11 | fedora-rawhide                      |
+| custom-user-metadata | JSON object (string) stored verbatim in Koji build metadata under `extra.custom_user_metadata`. Free-form; the pipeline does not interpret the keys. Used to disambiguate builds with identical commit SHAs (e.g., `{"mr_iid": "496", "target_branch": "rhel-9.6.0"}`). Must be a valid JSON object or empty. | ""                                  |
 
 ## Parametrizing timeouts
 
