@@ -155,6 +155,15 @@ spec:
           specfile_name="${specfile_prefix}.spec"
         fi
 
+        # Koji builds the noarch task on a real-arch buildroot but passes
+        # rpmbuild --target noarch (kojid: find_arch() + build() -> --target), so that
+        # %ifarch guards drop the arch-specific subpackages.  Mock's --target moves
+        # only rpmbuild's target; the chroot and repo stay on the real builder arch.
+        mock_target=()
+        if [ "$(params.arch)" = "noarch" ]; then
+          mock_target=(--target noarch)
+        fi
+
         success=true
         if "$(params.hermetic)"; then
           # Give mockbuilder rights to consume buildroot.
@@ -177,6 +186,7 @@ spec:
                   /buildroot/results/buildroot_repo \
                   --spec /source/$specfile_name \
                   --sources /source --resultdir /results \
+                  "${mock_target[@]}" \
           || success=false
         else
           if [ -n "$(params.mock-arch-override)" ]; then
@@ -194,6 +204,7 @@ spec:
               mock -r /mock.cfg \
                   --spec /source/$specfile_name \
                   --sources /source --resultdir /results \
+                  "${mock_target[@]}" \
           || success=false
         fi
 

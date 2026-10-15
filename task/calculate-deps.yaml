@@ -140,6 +140,15 @@ spec:
           specfile_name="${specfile_prefix}.spec"
         fi
 
+        # Koji builds the noarch task on a real-arch buildroot but passes
+        # rpmbuild --target noarch (kojid: find_arch() + build() -> --target), so that
+        # %ifarch guards drop the arch-specific subpackages.  Mock's --target moves
+        # only rpmbuild's target; the chroot and repo stay on the real builder arch.
+        mock_target=()
+        if [ "$(params.arch)" = "noarch" ]; then
+          mock_target=(--target noarch)
+        fi
+
         success=true
         remote_cmd podman run -u mockbuilder \
                               -v "$HOMEDIR/source:/source" \
@@ -150,6 +159,7 @@ spec:
                 --spec /source/$specfile_name \
                 --sources /source --resultdir /results \
                 --calculate-build-dependencies \
+                "${mock_target[@]}" \
         || success=false
 
         # Display DNF logs regardless of the Mock exit status, then propagate
