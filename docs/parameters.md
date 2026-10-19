@@ -9,7 +9,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | git-url             | Source Repository URL. Typically set to `{{ source_url }}`.                          |                                     |
 | revision            | Revision of the Source Repository. Typically use `{{ revision }}`.                   |                                     |
 | target-branch       | What is the package branch we work with, e.g., `rhel-10-main`, `{{ target_branch }}` |                                     |
-| build-architectures | Array of architectures we want to build for                                          | `[aarch64, s390x, ppc64le, x86_64]` |
+| build-architectures | Array of architectures we want to build for | `[aarch64, s390x, ppc64le, x86_64]` |
 | build-platforms     | Array of Multi-Platform Labels (MPLs) specifying host resources. This configuration determines the VM allocation for architecture-specific tasks. Available labels depend on the cluster configuration. | [linux/arm64, linux/s390x, linux/ppc64le, linux/amd64]                                  |
 | hermetic            | Perform the RPM build in a hermetic (offline) environment.                           | true                                |
 | script-environment-image | Multi-arch OCI image that includes Mock and other tooling required by Pipeline tasks. | Check the [main branch][mock-image] |
@@ -18,6 +18,7 @@ Below is the set of supported parameters accepted by the pipeline.
 | mock-config-template-filename-in-sources | If Mock Config template exists within source directory, specify where. | ""                                  |
 | ociArtifactExpiresAfter | How long Trusted Artifacts should be retained                                    | 14d                                 |
 | target-distribution | Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11 | fedora-rawhide                      |
+| custom-user-metadata | JSON object (string) stored verbatim in Koji build metadata under `extra.custom_user_metadata`. Free-form; the pipeline does not interpret the keys. Used to disambiguate builds with identical commit SHAs (e.g., `{"mr_iid": "496", "target_branch": "rhel-9.6.0"}`). Must be a valid JSON object or empty. | ""                                  |
 
 ## Parametrizing timeouts
 

@@ -1,7 +1,7 @@
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-json
@@ -19,7 +19,7 @@ repos:
         types: [shell]
         exclude: ^\.claude/
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
   - repo: https://github.com/adrienverge/yamllint
@@ -37,6 +37,6 @@ repos:
         files: '^(pipeline|task|\.tekton)/.*\.ya?ml$'
         pass_filenames: true
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 44.53.0
+    rev: 44.164.7
     hooks:
       - id: renovate-config-validator

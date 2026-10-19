@@ -73,7 +73,7 @@ spec:
         configuration, dist-git-client, koji-client, and other RPM-build related
         tooling.
       name: script-environment-image
-      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:0361f47218e2959fe515f3530023d9b741eb0597fa689bf8b64633f00c52319d
+      default: quay.io/redhat-user-workloads/rpm-build-pipeline-tenant/environment:latest@sha256:868e2a41783ce3ebf242cdb4c456ab2250f36d5e03019a92f0fd5792810b55d4
       type: string
     - name: ociStorage
       description: |
@@ -131,6 +131,13 @@ spec:
       description: Use per-architecture Pulp repositories for stable DNF-consumable URLs
       type: string
       default: "false"
+    - name: custom-user-metadata
+      description: |
+        JSON object (string) stored verbatim in the Koji build metadata under
+        extra.custom_user_metadata. Free-form; the pipeline does not interpret
+        the keys. Must be a JSON object or empty.
+      type: string
+      default: ""
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -185,7 +192,7 @@ spec:
           - name: name
             value: init
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-init:0.4@sha256:5a423246792ac501ea279229b42ee57da9927da441c04b5c9ff86817b0856b08
+            value: quay.io/konflux-ci/tekton-catalog/task-init:0.4.3@sha256:5197c2d81b0d0babe7468e8c06a9281fdf0654bba369faca4492233dc88f54e4
           - name: kind
             value: task
         resolver: bundles
@@ -209,7 +216,7 @@ spec:
           - name: name
             value: git-clone-oci-ta
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2@sha256:e5ba1f8549e6a0f043629ef00bea7511957121e05304b688f40ff12304560f38
+            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2.6@sha256:a3678910c2bf9187a66a96066193cb41046fbb7097160bf2be6a374ed5e49d30
           - name: kind
             value: task
         resolver: bundles
@@ -483,6 +490,78 @@ spec:
           value: $(tasks.calculate-deps-aarch64.results.calculation-artifact)
         - name: ociStorage
           value: $(params.ociStorage).rpmbuild-aarch64
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/rpmbuild.yaml
+    - name: calculate-deps-riscv64
+      runAfter:
+        - process-sources
+        - prepare-mock-config
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.deps-riscv64)
+        - name: arch
+          value: riscv64
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).calculation-riscv64
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: specfile
+          value: $(params.specfile)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/calculate-deps.yaml
+    - name: rpmbuild-riscv64
+      runAfter:
+        - calculate-deps-riscv64
+      timeout: "72h"
+      params:
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: mock-config-template-file
+          value: $(tasks.prepare-mock-config.results.mock-config-template-file)
+        - name: PLATFORM
+          value: $(tasks.process-sources.results.skip-mpc-tasks.build-riscv64)
+        - name: arch
+          value: riscv64
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: hermetic
+          value: $(params.hermetic)
+        - name: dependencies-artifact
+          value: $(tasks.process-sources.results.dependencies-artifact)
+        - name: calculation-artifact
+          value: $(tasks.calculate-deps-riscv64.results.calculation-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).rpmbuild-riscv64
         - name: ociArtifactExpiresAfter
           value: $(params.ociArtifactExpiresAfter)
         - name: specfile
@@ -810,6 +889,8 @@ spec:
           value: $(tasks.rpmbuild-i686.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: riscv64-artifact
+          value: $(tasks.rpmbuild-riscv64.results.rpmbuild-artifact)
         - name: s390-artifact
           value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
@@ -824,12 +905,15 @@ spec:
           value: $(params.purl-rpm-namespace)
         - name: pulp-target-arch-repo
           value: $(params.pulp-target-arch-repo)
+        - name: custom-user-metadata
+          value: $(params.custom-user-metadata)
       runAfter:
         - rpmbuild-s390
         - rpmbuild-s390x
         - rpmbuild-x86-64
         - rpmbuild-i686
         - rpmbuild-aarch64
+        - rpmbuild-riscv64
         - rpmbuild-ppc64le
         - rpmbuild-noarch
       taskRef:
@@ -848,6 +932,7 @@ spec:
         - rpmbuild-x86-64
         - rpmbuild-i686
         - rpmbuild-aarch64
+        - rpmbuild-riscv64
         - rpmbuild-ppc64le
         - rpmbuild-noarch
       params:
@@ -857,6 +942,8 @@ spec:
           value: $(tasks.rpmbuild-x86-64.results.rpmbuild-artifact)
         - name: aarch64-artifact
           value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
+        - name: riscv64-artifact
+          value: $(tasks.rpmbuild-riscv64.results.rpmbuild-artifact)
         - name: s390-artifact
           value: $(tasks.rpmbuild-s390.results.rpmbuild-artifact)
         - name: s390x-artifact
