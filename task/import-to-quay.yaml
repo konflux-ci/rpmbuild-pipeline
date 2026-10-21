@@ -97,6 +97,11 @@ spec:
   steps:
     - name: use-trusted-artifacts
       image: quay.io/konflux-ci/build-trusted-artifacts@sha256:9161c42f567e8ecb1ee63712c821c00fd040b98e85d2209a6ada0495514acfb4
+      computeResources:
+        requests:
+          memory: "4Gi"
+        limits:
+          memory: "4Gi"
       args:
         - use
         - $(params.x86_64-artifact)=/var/workdir/results
