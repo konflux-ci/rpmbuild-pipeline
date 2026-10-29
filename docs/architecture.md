@@ -138,10 +138,16 @@ Mock receives a valid `@ARCH@` value in its configuration template.
 - **upload-to-quay**
     - Collects all built artifacts from previous steps and uploads them to
       OCI registry (the destination is selected by the user as a pipeline
-      parameter).
-    - If config for [pulp cli][] is setup as a secret using pulp-config secret name,
-      Pulp will upload RPMs, logs, and SBOM to a configured pulp domain.
-      In the secret will need to be a file called oauth-cli.toml. This will need to contain
+      parameter).  The SBOM is attached to the image using Cosign on the RPM
+      bundle ``IMAGE_URL`` / ``IMAGE_DIGEST`` (from ``push-to-quay-select-auth``),
+      not on the separate ``pulp_results.json`` ORAS referrer.
+    - If config for [pulp cli][] is setup as a secret using pulp-access secret name,
+      ``push-to-pulp-select-auth`` runs ``pulp-tool upload-build`` with
+      ``--oci-storage`` set to the same ``ociStorage`` ref as the RPM ORAS push.
+      pulp-tool ORAS-attaches ``pulp_results.json`` to that bundle manifest
+      (discoverable via ``oras discover`` on the bundle digest).  Pipeline
+      ``IMAGE_*`` and Tekton Chains provenance stay on the RPM bundle ref.
+      In the secret will need to be a file called ``cli.toml``. This will need to contain
       the pulp config toml. It accepts either certs or oauth. If using certs to do
       authentication, the certs will need to be included in the secret.
 - **check-noarch**

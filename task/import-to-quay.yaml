@@ -89,10 +89,6 @@ spec:
     - name: SBOM_BLOB_URL
       description: SPDX SBOM
       type: string
-    - name: PULP-IMAGE_URL
-      description: Location of Pulp build artifact
-    - name: PULP-IMAGE_DIGEST
-      description: Pulp build artifact digest
   stepTemplate:
     imagePullPolicy: IfNotPresent
     volumeMounts:
@@ -193,30 +189,28 @@ spec:
         #!/usr/bin/env bash
         jq . sbom-merged.json
     - name: push-to-pulp-select-auth
-      image: quay.io/konflux-ci/pulp-tool:latest@sha256:ef25e9cf7a9e4c1b0f63a1e3df8f16818867bc428a6a12807a84d1c4a467295f
+      image: quay.io/redhat-user-workloads/artifact-storage-tenant/tooling/pulp-tool-container@sha256:188bfe43b2bb812c9bf191d4563e189bd8b15794bd9b4ad2ee6a26b99f34991d
       script: |
         #!/usr/bin/env bash
         set -e
-        : > "$(results.PULP-IMAGE_URL.path)"
-        : > "$(results.PULP-IMAGE_DIGEST.path)"
 
         if [ -f /pulp-access/cli.toml ]; then
           PULP_ARGS=(
             pulp-tool --config /pulp-access/cli.toml
             --build-id "$(params.pipelinerun-id)"
             --namespace "$(context.taskRun.namespace)"
-            upload
+            upload-build
             --parent-package "$(params.package-name)"
             --rpm-path "/var/workdir/results"
             --sbom-path "/var/workdir/results/oras-staging/sbom-merged.json"
-            --artifact-results "$(results.PULP-IMAGE_URL.path)","$(results.PULP-IMAGE_DIGEST.path)"
+            --oci-storage "$(params.ociStorage)"
           )
           if [ "$(params.pulp-target-arch-repo)" = "true" ]; then
             PULP_ARGS+=(--target-arch-repo)
           fi
           "${PULP_ARGS[@]}"
         else
-          echo "Pulp config file does not exist; skipping push and writing empty Pulp result files"
+          echo "Pulp config file does not exist; skipping push"
         fi
       volumeMounts:
         - mountPath: /pulp-access
