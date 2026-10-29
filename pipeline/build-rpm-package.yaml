@@ -154,12 +154,6 @@ spec:
     - name: SBOM_BLOB_URL
       description: SPDX SBOM
       value: $(tasks.upload-to-quay.results.SBOM_BLOB_URL)
-    - description: ""
-      name: PULP-IMAGE_URL
-      value: $(tasks.upload-to-quay.results.PULP-IMAGE_URL)
-    - description: ""
-      name: PULP-IMAGE_DIGEST
-      value: $(tasks.upload-to-quay.results.PULP-IMAGE_DIGEST)
   tasks:
     - name: store-start-time
       retries: 3
