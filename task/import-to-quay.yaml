@@ -193,7 +193,7 @@ spec:
         #!/usr/bin/env bash
         jq . sbom-merged.json
     - name: push-to-pulp-select-auth
-      image: quay.io/konflux-ci/pulp-tool:latest@sha256:ef25e9cf7a9e4c1b0f63a1e3df8f16818867bc428a6a12807a84d1c4a467295f
+      image: quay.io/konflux-ci/pulp-tool:latest@sha256:188bfe43b2bb812c9bf191d4563e189bd8b15794bd9b4ad2ee6a26b99f34991d
       script: |
         #!/usr/bin/env bash
         set -e
