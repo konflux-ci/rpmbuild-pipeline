@@ -169,7 +169,7 @@ spec:
             description: Timestamp for pipeline start
         steps:
           - name: store-timestamp
-            image: registry.access.redhat.com/ubi9
+            image: $(params.script-environment-image)
             script: |
               #!/usr/bin/env bash
               set -e
