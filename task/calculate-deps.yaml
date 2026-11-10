@@ -91,7 +91,29 @@ spec:
         chmod 0400 ~/.ssh/id_rsa
         export SSH_HOST=$(cat /ssh/host)
         export HOMEDIR=$(cat /ssh/user-dir)
-        export SSH_ARGS="-o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10"
+
+        # Configure SSH host key verification (KONFLUX-15621)
+        SSH_ARGS_BASE="-o ServerAliveInterval=60 -o ServerAliveCountMax=10"
+        if [ -e "/ssh/host_key" ]; then
+          # MPC provided host key - use strict host key checking
+          echo "Configuring SSH host key verification"
+          install -m 0600 /ssh/host_key ~/.ssh/known_hosts
+          export SSH_ARGS="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SSH_ARGS_BASE"
+        else
+          # Host key not provided - fall back to trust-on-first-use with warning
+          echo WARNING: SSH host key not provided by MPC - using trust-on-first-use >&2
+          echo WARNING: This is vulnerable to man-in-the-middle attacks (KONFLUX-15621) >&2
+          echo WARNING: MPC should provide /ssh/host_key in the secret >&2
+          # Use ssh-keyscan for TOFU (better than no verification, but still vulnerable on first connect)
+          if ssh-keyscan -H "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null && [ -s ~/.ssh/known_hosts ]; then
+            chmod 0600 ~/.ssh/known_hosts
+            export SSH_ARGS="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SSH_ARGS_BASE"
+          else
+            echo "WARNING: ssh-keyscan failed - disabling host key verification" >&2
+            export SSH_ARGS="-o StrictHostKeyChecking=no $SSH_ARGS_BASE"
+          fi
+        fi
+
         remote_cmd() { ssh $SSH_ARGS "$SSH_HOST" "$@" ; }
         send() { rsync -e "ssh $SSH_ARGS" -rva "$1" "$SSH_HOST:$2" ; }
         receive() { rsync -e "ssh $SSH_ARGS" -rva "$SSH_HOST:$1" "$2" ; }
