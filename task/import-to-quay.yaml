@@ -112,6 +112,14 @@ spec:
       env:
         - name: CUSTOM_USER_METADATA
           value: $(params.custom-user-metadata)
+        - name: GIT_URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.revision)
+        - name: START_TIME
+          value: $(params.start-time)
+        - name: PIPELINERUN_ID
+          value: $(params.pipelinerun-id)
       script: |
         #!/usr/bin/env bash
         set -e
@@ -120,16 +128,23 @@ spec:
         if [ -n "${CUSTOM_USER_METADATA}" ]; then
             extra_args+=(--custom-user-metadata "${CUSTOM_USER_METADATA}")
         fi
+        if [ -n "${START_TIME}" ]; then
+            extra_args+=(--start-time "${START_TIME}")
+        fi
         /usr/local/bin/gather_rpms.py \
-            --source-url git+$(params.git-url)#$(params.revision) \
-            --start-time $(params.start-time) \
+            --source-url "git+${GIT_URL}#${REVISION}" \
             --end-time `date "+%s"` \
-            --pipeline-id "$(params.pipelinerun-id)" \
+            --pipeline-id "${PIPELINERUN_ID}" \
             "${extra_args[@]}"
         echo "Gathered `ls oras-staging | wc -l` files for upload"
 
     - name: push-to-quay-select-auth
       image: quay.io/konflux-ci/task-runner:4.0.0@sha256:ab7440e1101af1ff0418e16badede2f1590664d3189099030bf3f782371bd9da
+      env:
+        - name: OCI_STORAGE
+          value: $(params.ociStorage)
+        - name: OCI_ARTIFACT_EXPIRES_AFTER
+          value: $(params.ociArtifactExpiresAfter)
       script: |
         #!/usr/bin/env bash
         set -e
@@ -139,10 +154,10 @@ spec:
         # Get NVR from any SRPM
         NVR=$(<nvr.log)
 
-        IMAGE_URL="$(params.ociStorage)"
+        IMAGE_URL="${OCI_STORAGE}"
 
         echo "Selecting auth for $IMAGE_URL"
-        select-oci-auth $IMAGE_URL > $HOME/auth.json
+        select-oci-auth "$IMAGE_URL" > "$HOME/auth.json"
 
         echo "Pushing to: $IMAGE_URL"
         cd oras-staging
@@ -150,22 +165,25 @@ spec:
         oras push \
              --registry-config "$HOME/auth.json" \
              --artifact-type application/vnd.rpm.build.v0 \
-             --annotation quay.expires-after=$(params.ociArtifactExpiresAfter) \
-             $IMAGE_URL \
+             --annotation "quay.expires-after=${OCI_ARTIFACT_EXPIRES_AFTER}" \
+             "$IMAGE_URL" \
              `cat ../oras-push-list.txt` | tee /tmp/oras.log
 
         grep "Digest:" /tmp/oras.log | awk '{print $2}' | tr -d '\n' > $(results.IMAGE_DIGEST.path)
-        echo -n $IMAGE_URL > $(results.IMAGE_URL.path)
-        echo -n $NVR > $(results.NVR.path)
+        echo -n "$IMAGE_URL" > "$(results.IMAGE_URL.path)"
+        echo -n "$NVR" > "$(results.NVR.path)"
     - name: merge-syft-sbom
       image: $(params.script-environment-image)
       workingDir: /var/workdir/results/oras-staging
+      env:
+        - name: PURL_RPM_NAMESPACE
+          value: $(params.purl-rpm-namespace)
       script: |
         #!/bin/bash
         export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
         set -x
         # Configure PURL RPM namespace for SBOM generation
-        echo '{"purl_rpm_namespace": "$(params.purl-rpm-namespace)"}' > rpmbuild_sbom_config.json
+        echo "{\"purl_rpm_namespace\": \"${PURL_RPM_NAMESPACE}\"}" > rpmbuild_sbom_config.json
         # list dirs
         find . | sort
         # Create empty SPDX doc as placeholder for --syft-sbom (to be removed later)
@@ -190,6 +208,13 @@ spec:
         jq . sbom-merged.json
     - name: push-to-pulp-select-auth
       image: quay.io/konflux-ci/pulp-tool:latest@sha256:188bfe43b2bb812c9bf191d4563e189bd8b15794bd9b4ad2ee6a26b99f34991d
+      env:
+        - name: PIPELINERUN_ID
+          value: $(params.pipelinerun-id)
+        - name: PACKAGE_NAME
+          value: $(params.package-name)
+        - name: PULP_TARGET_ARCH_REPO
+          value: $(params.pulp-target-arch-repo)
       script: |
         #!/usr/bin/env bash
         set -e
@@ -197,15 +222,15 @@ spec:
         if [ -f /pulp-access/cli.toml ]; then
           PULP_ARGS=(
             pulp-tool --config /pulp-access/cli.toml
-            --build-id "$(params.pipelinerun-id)"
+            --build-id "${PIPELINERUN_ID}"
             --namespace "$(context.taskRun.namespace)"
             upload-build
-            --parent-package "$(params.package-name)"
+            --parent-package "${PACKAGE_NAME}"
             --rpm-path "/var/workdir/results"
             --sbom-path "/var/workdir/results/oras-staging/sbom-merged.json"
             --oci-storage "$(cat "$(results.IMAGE_URL.path)")@$(cat "$(results.IMAGE_DIGEST.path)")"
           )
-          if [ "$(params.pulp-target-arch-repo)" = "true" ]; then
+          if [ "${PULP_TARGET_ARCH_REPO}" = "true" ]; then
             PULP_ARGS+=(--target-arch-repo)
           fi
           "${PULP_ARGS[@]}"

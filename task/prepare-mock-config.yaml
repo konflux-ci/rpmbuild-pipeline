@@ -48,6 +48,11 @@ spec:
         - $(params.source-artifact)=/var/workdir/source
     - name: prepare-mock-config-template
       image: $(params.script-environment-image)
+      env:
+        - name: MOCK_CONFIG_TEMPLATE_FILENAME
+          value: $(params.mock-config-template-filename-in-sources)
+        - name: CHROOT
+          value: $(params.chroot)
       script: |
         #!/bin/bash
         set -ex
@@ -55,17 +60,17 @@ spec:
         cd /var/workdir/source
         mkdir /var/workdir/mock-config
         mock_config_template=/var/workdir/mock-config/mock.cfg
-        if [ -n "$(params.mock-config-template-filename-in-sources)" ]; then
+        if [ -n "${MOCK_CONFIG_TEMPLATE_FILENAME}" ]; then
           # The Mock config template is committed to the Git repository.  Copy
           # it to the standard location so the Trusted Artifact uploader can
           # pick it up correctly.
-          cp $(params.mock-config-template-filename-in-sources) "$mock_config_template"
+          cp -- "${MOCK_CONFIG_TEMPLATE_FILENAME}" "$mock_config_template"
         else
           cat > "$mock_config_template" <<EOF
           # By default, the Konflux RPM pipeline uses the predefined Mock
           # configuration shipped with mock-core-configs, which builds against
           # mirrored Fedora content (released packages) by default.
-          include("/etc/mock/$(params.chroot).cfg")
+          include("/etc/mock/${CHROOT}.cfg")
         EOF
         fi
         # present the file in logs
