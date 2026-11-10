@@ -126,15 +126,20 @@ spec:
         - $(params.source-artifact)=/var/workdir/source
     - name: download
       image: $(params.script-environment-image)
+      env:
+        - name: SPECFILE
+          value: $(params.specfile)
+        - name: PACKAGE_NAME
+          value: $(params.package-name)
       script: |
         #!/usr/bin/env bash
         set -ex
         cd "/var/workdir/source/${MONOREPO_SUBDIR}"
 
-        if test "$(params.specfile)" != "null" ; then
-          specfile_name=$(params.specfile)
+        if [ "${SPECFILE}" != "null" ]; then
+          specfile_name="${SPECFILE}"
         else
-          specfile_prefix=$(params.package-name)
+          specfile_prefix="${PACKAGE_NAME}"
           specfile_name="${specfile_prefix}.spec"
         fi
 
@@ -142,7 +147,7 @@ spec:
         CURL_HOME=$(mktemp -d)
         echo 'header = "Accept-Encoding: identity"' > $CURL_HOME/.curlrc
 
-        CURL_HOME="$CURL_HOME" dist-git-client --forked-from https://src.fedoraproject.org/rpms/$(params.package-name) sources
+        CURL_HOME="$CURL_HOME" dist-git-client --forked-from "https://src.fedoraproject.org/rpms/${PACKAGE_NAME}" sources
         # Make sure we use norpm: https://github.com/fedora-infra/rpmautospec/pull/319
         if [ "${MONOREPO_SUBDIR:-.}" = "." ]; then
           RPMAUTOSPEC_SPEC_PARSER=norpm rpmautospec process-distgit "$specfile_name" "$specfile_name"
@@ -170,6 +175,11 @@ spec:
         - "$(params.build-architectures[*])"
         - "--platform-labels"
         - "$(params.build-platforms[*])"
+      env:
+        - name: HERMETIC
+          value: $(params.hermetic)
+        - name: TARGET_DISTRIBUTION
+          value: $(params.target-distribution)
       script: |
         #!/bin/bash
         export PS4='+ $(date "+%Y-%m-%d %H:%M:%S") '
@@ -177,10 +187,10 @@ spec:
         working_dir="/var/workdir/source/${MONOREPO_SUBDIR}"
         cd "${working_dir}"
 
-        if $(params.hermetic); then
-          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "$(params.target-distribution)" --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+        if [ "${HERMETIC}" = "true" ]; then
+          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "${TARGET_DISTRIBUTION}" --hermetic --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         else
-          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "$(params.target-distribution)" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
+          python3 /usr/local/bin/select_architectures.py "$@" --target-distribution "${TARGET_DISTRIBUTION}" --results-file "$(results.skip-mpc-tasks.path)" --workdir "${working_dir}"
         fi
     - name: create-trusted-artifact
       image: quay.io/konflux-ci/build-trusted-artifacts@sha256:9161c42f567e8ecb1ee63712c821c00fd040b98e85d2209a6ada0495514acfb4

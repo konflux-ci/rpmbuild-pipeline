@@ -80,11 +80,28 @@ spec:
         - $(params.mock-config-template-file)=/var/workdir/mock-config
     - name: mock-build
       image: "quay.io/redhat-appstudio/multi-platform-runner:01c7670e81d5120347cf0ad13372742489985e5f@sha256:246adeaaba600e207131d63a7f706cffdcdc37d8f600c56187123ec62823ff44"
+      env:
+        - name: PLATFORM
+          value: $(params.PLATFORM)
+        - name: ARCH
+          value: $(params.arch)
+        - name: SCRIPT_ENVIRONMENT_IMAGE
+          value: $(params.script-environment-image)
+        - name: SPECFILE
+          value: $(params.specfile)
+        - name: PACKAGE_NAME
+          value: $(params.package-name)
+        - name: HERMETIC
+          value: $(params.hermetic)
+        - name: MOCK_ARCH_OVERRIDE
+          value: $(params.mock-arch-override)
+        - name: TARGET_BRANCH
+          value: $(params.target-branch)
       script: |
         #!/bin/bash
         set -ex
-        if test "$(params.PLATFORM)" = localhost; then
-          echo "Step skipped - architecture $(params.arch) not selected for build"
+        if [ "${PLATFORM}" = "localhost" ]; then
+          echo "Step skipped - architecture ${ARCH} not selected for build"
           exit 0
         fi
         mkdir -p ~/.ssh
@@ -125,7 +142,7 @@ spec:
 
         send "$workdir/source/" "$HOMEDIR/source"
 
-        mock_img=$(params.script-environment-image)
+        mock_img="${SCRIPT_ENVIRONMENT_IMAGE}"
         # podman pull has --retry=3 as a default, nevertheless it works only for download of blobs,
         # if manifest download fails it will not be applied
         for i in {1..5} ; do
@@ -148,10 +165,10 @@ spec:
             --security-opt label=disable "$mock_img"
         )
 
-        if test "$(params.specfile)" != "null" ; then
-          specfile_name=$(params.specfile)
+        if [ "${SPECFILE}" != "null" ]; then
+          specfile_name="${SPECFILE}"
         else
-          specfile_prefix=$(params.package-name)
+          specfile_prefix="${PACKAGE_NAME}"
           specfile_name="${specfile_prefix}.spec"
         fi
 
@@ -160,18 +177,18 @@ spec:
         # %ifarch guards drop the arch-specific subpackages.  Mock's --target moves
         # only rpmbuild's target; the chroot and repo stay on the real builder arch.
         mock_target=()
-        if [ "$(params.arch)" = "noarch" ]; then
+        if [ "${ARCH}" = "noarch" ]; then
           mock_target=(--target noarch)
         fi
 
         success=true
-        if "$(params.hermetic)"; then
+        if [ "${HERMETIC}" = "true" ]; then
           # Give mockbuilder rights to consume buildroot.
           remote_cmd mkdir "$HOMEDIR/buildroot"
           remote_cmd podman unshare setfacl -m g:135:r-x -m default:g:135:r-x "$HOMEDIR/buildroot"
-          send "$workdir/results/$(params.arch)/results" "$HOMEDIR/buildroot"
+          send "$workdir/results/${ARCH}/results" "$HOMEDIR/buildroot"
 
-          BRANCH=$(params.target-branch)
+          BRANCH="${TARGET_BRANCH}"
           BRANCH=${BRANCH,,}
           if [[ $BRANCH == rhel-6* ]] ; then
             RHEL6_IGNORE_SBOM="--disable-plugin=expand_spec"
@@ -189,18 +206,18 @@ spec:
                   "${mock_target[@]}" \
           || success=false
         else
-          if [ -n "$(params.mock-arch-override)" ]; then
-            mock_arch=$(params.mock-arch-override)
-          elif [ $(params.arch) == "i686" ] ; then
+          if [ -n "${MOCK_ARCH_OVERRIDE}" ]; then
+            mock_arch="${MOCK_ARCH_OVERRIDE}"
+          elif [ "${ARCH}" = "i686" ]; then
             mock_arch=i386
           else
-            mock_arch=$(params.arch)
+            mock_arch="${ARCH}"
           fi
           # Instantiate the given Mock config template for our architecture.
           sed "s|@ARCH@|$mock_arch|" "$workdir/mock-config/mock.cfg" > "$workdir/mock.cfg"
           # Keep i386 for repository URLs and mock-core-configs profile names,
           # but build i686 RPMs even when using a custom Mock template.
-          if [ "$(params.arch)" = "i686" ] && [ -z "$(params.mock-arch-override)" ]; then
+          if [ "${ARCH}" = "i686" ] && [ -z "${MOCK_ARCH_OVERRIDE}" ]; then
             printf "\nconfig_opts['target_arch'] = 'i686'\n" >> "$workdir/mock.cfg"
           fi
           send "$workdir/mock.cfg" "$HOMEDIR/mock.cfg"
@@ -230,7 +247,7 @@ spec:
         # the container's subuid.
         remote_cmd podman unshare chmod -R a+rX "$HOMEDIR/results/"
 
-        resultdir="$workdir/results/$(params.arch)"
+        resultdir="$workdir/results/${ARCH}"
         mkdir -p "$resultdir"
         receive "$HOMEDIR/results/" "$resultdir"
 
@@ -251,7 +268,7 @@ spec:
                   -s /source \
                   --specfile /results/expanded-spec.txt \
                   --already-expanded \
-                  --forked-from "https://src.fedoraproject.org/rpms/$(params.package-name)" \
+                  --forked-from "https://src.fedoraproject.org/rpms/${PACKAGE_NAME}" \
                   -o /results/ancestors.json
           mkdir -p "$resultdir/results"
           receive "$HOMEDIR/results/ancestors.json" "$resultdir/results/ancestors.json"
@@ -278,11 +295,16 @@ spec:
         limits:
           memory: "8Gi"
       workingDir: /var/workdir
+      env:
+        - name: PLATFORM
+          value: $(params.PLATFORM)
+        - name: ARCH
+          value: $(params.arch)
       script: |
         #!/usr/bin/env bash
 
-        if test "$(params.PLATFORM)" = localhost; then
-          echo "Step skipped - architecture $(params.arch) not selected for build"
+        if [ "${PLATFORM}" = "localhost" ]; then
+          echo "Step skipped - architecture ${ARCH} not selected for build"
           exit 0
         fi
 
@@ -329,10 +351,15 @@ spec:
         limits:
           memory: "8Gi"
       workingDir: /var/workdir
+      env:
+        - name: PLATFORM
+          value: $(params.PLATFORM)
+        - name: ARCH
+          value: $(params.arch)
       script: |
         #!/usr/bin/env bash
-        if test "$(params.PLATFORM)" = localhost; then
-          echo "Step skipped - architecture $(params.arch) not selected for build"
+        if [ "${PLATFORM}" = "localhost" ]; then
+          echo "Step skipped - architecture ${ARCH} not selected for build"
           exit 0
         fi
 
@@ -340,7 +367,7 @@ spec:
           [ -d "$rpm_dir" ] || continue
           rpm_nvra=$(basename "$rpm_dir")
           echo "Scanning $rpm_dir"
-          syft "$rpm_dir" --select-catalogers +javascript-package-cataloger -o spdx-json > "results/$(params.arch)/$rpm_nvra.sbom.json"
+          syft "$rpm_dir" --select-catalogers +javascript-package-cataloger -o spdx-json > "results/${ARCH}/$rpm_nvra.sbom.json"
         done
     - name: create-trusted-artifact
       image: quay.io/konflux-ci/build-trusted-artifacts@sha256:9161c42f567e8ecb1ee63712c821c00fd040b98e85d2209a6ada0495514acfb4
